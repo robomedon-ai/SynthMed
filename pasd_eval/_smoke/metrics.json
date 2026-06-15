@@ -1,0 +1,42 @@
+{
+  "args": {
+    "modality": "BTFE",
+    "model": "pix2pix",
+    "split": "test",
+    "num": 8,
+    "out": "pasd_eval/_smoke",
+    "device": "cuda",
+    "skip_privacy": false,
+    "privacy_cap": 16,
+    "seed": 0
+  },
+  "fidelity": {
+    "fid": 227.2303924560547,
+    "kid_mean": 0.19078212976455688,
+    "kid_std": 1.446095723167673e-07,
+    "n": 8
+  },
+  "paired": {
+    "ssim": 0.4050859808921814,
+    "psnr": 15.424689292907715,
+    "lpips": 0.3323745131492615
+  },
+  "privacy": {
+    "nn_train_cap": 16,
+    "nn_lpips_min": 0.28511419892311096,
+    "nn_lpips_p05": 0.2871598482131958,
+    "nn_lpips_p50": 0.29665569961071014,
+    "nn_lpips_mean": 0.3028000667691231,
+    "nn_lpips_max": 0.3231406807899475,
+    "nn_indices": [
+      3,
+      3,
+      4,
+      4,
+      10,
+      10,
+      10,
+      4
+    ]
+  }
+}

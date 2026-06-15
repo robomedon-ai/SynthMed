@@ -1,0 +1,31 @@
+{
+  "args": {
+    "modality": "BTFE",
+    "model": "ldm",
+    "split": "test",
+    "num": 100,
+    "out": "pasd_eval/maskdice_ldm",
+    "device": "cuda",
+    "skip_privacy": true,
+    "privacy_cap": 128,
+    "seed": 0,
+    "num_inference_steps": 25,
+    "guidance_scale": 3.0
+  },
+  "fidelity": {
+    "fid": 159.8618927001953,
+    "kid_mean": 0.09382523596286774,
+    "kid_std": 0.0066274418495595455,
+    "n": 100
+  },
+  "paired": {
+    "ssim": 0.3830941319465637,
+    "psnr": 13.184930801391602,
+    "lpips": 0.34887006878852844
+  },
+  "mask_faith": {
+    "mean_mask_dice": 0.9106036108732224,
+    "std_mask_dice": 0.03058201155702997,
+    "n": 100
+  }
+}

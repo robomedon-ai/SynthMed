@@ -1,0 +1,15 @@
+{
+  "args": {
+    "num": 200,
+    "out": "pasd_eval/cyclegan_btfe_tse",
+    "device": "cuda"
+  },
+  "n_per_modality": 200,
+  "generation_time_s": 9.7,
+  "fid_BTFE_to_TSE": 115.05371856689453,
+  "fid_TSE_to_BTFE": 126.29631805419922,
+  "cycle_AtoBtoA_l1": 0.013133710250258446,
+  "cycle_BtoAtoB_l1": 0.017711922526359558,
+  "identity_BA_on_A_l1": 0.009864130057394505,
+  "identity_AB_on_B_l1": 0.013049639761447906
+}

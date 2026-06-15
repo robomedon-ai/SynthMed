@@ -1,0 +1,16 @@
+# Runtime deps for the SynthMed Space.
+# NOTE: torch + torchvision are provided by the base image
+# (pytorch/pytorch:2.4.1-cuda12.1-cudnn9-runtime) — do NOT add them here, or pip
+# will clobber the CUDA build. lpips/torchmetrics are excluded: eval-only.
+diffusers==0.38.0
+flask==3.1.2
+gunicorn==23.0.0
+numpy>=1.26,<3
+pillow>=10
+nibabel==5.3.2
+SimpleITK==2.4.0
+scikit-image==0.25.2
+scipy>=1.11
+safetensors>=0.4
+einops==0.8.1
+huggingface_hub>=0.25

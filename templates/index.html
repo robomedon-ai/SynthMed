@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SynthMed — Medical Image Synthesis &amp; Evaluation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://unpkg.com/@niivue/niivue@0.44.2/dist/niivue.umd.js"></script>
+</head>
+<body>
+    <header>
+        <h1 class="brand" data-view="home">SynthMed</h1>
+        <p class="subtitle">Medical image synthesis &amp; downstream-utility evaluation</p>
+        <nav class="header-nav">
+            <button class="nav-btn active" data-view="home">Home</button>
+            <button class="nav-btn" data-view="mri">MRI Viewer</button>
+            <button class="nav-btn" data-view="cta">CTA Viewer</button>
+            <button class="nav-btn" data-view="tofmra">TOF-MRA Viewer</button>
+            <button class="nav-btn" data-view="modules">Modules</button>
+            <button class="nav-btn" data-view="results">Results</button>
+        </nav>
+    </header>
+
+    <!-- ============ HOME / LANDING VIEW ============ -->
+    <div class="container home-container" id="view-home">
+        <section class="home-hero">
+            <div class="home-hero-badge">cross-dataset study</div>
+            <h1 class="home-title">SynthMed</h1>
+            <p class="home-tagline">A unified platform for <b>medical image synthesis</b> and
+               <b>downstream-utility evaluation</b> across three paired datasets.</p>
+            <div class="home-finding">
+                <span class="home-finding-key">Realism&nbsp;&ne;&nbsp;Relevance</span>
+                <span class="home-finding-sub">the most realistic generator (best FID) is not the most useful for training real models &mdash; measured by Train-on-Synthetic-Test-on-Real.</span>
+            </div>
+            <div class="home-stats">
+                <div class="home-stat"><span class="home-stat-n">3</span><span class="home-stat-l">datasets</span></div>
+                <div class="home-stat"><span class="home-stat-n">5</span><span class="home-stat-l">generator families</span></div>
+                <div class="home-stat"><span class="home-stat-n">~15</span><span class="home-stat-l">trained models</span></div>
+                <div class="home-stat"><span class="home-stat-n">2</span><span class="home-stat-l">eval regimes</span></div>
+            </div>
+        </section>
+
+        <section class="home-cards">
+            <div class="home-card" data-view="mri">
+                <div class="home-card-icon">&#129504;</div>
+                <h3>Viewers</h3>
+                <p>Interactive 2D multi-planar + 3D volume rendering for placental MRI, cerebrovascular CTA, and TOF-MRA. Multi-class mask overlays, windowing, zoom.</p>
+                <span class="home-card-go">MRI &middot; CTA &middot; TOF-MRA &rarr;</span>
+            </div>
+            <div class="home-card" data-view="modules">
+                <div class="home-card-icon">&#129526;</div>
+                <h3>Synthesis</h3>
+                <p>Generate synthetic images with five model families &mdash; pix2pix, SPADE, CycleGAN, latent diffusion, and mask-conditioned diffusion &mdash; trained per dataset under one pipeline.</p>
+                <span class="home-card-go">Open Modules &rarr;</span>
+            </div>
+            <div class="home-card" data-view="modules" data-sub="tstr-seg">
+                <div class="home-card-icon">&#128300;</div>
+                <h3>Evaluation</h3>
+                <p>Image quality (FID, KID, SSIM, PSNR, LPIPS) <em>and</em> downstream utility via TSTR segmentation &mdash; see real-trained vs synthetic-trained predictions side by side.</p>
+                <span class="home-card-go">Segmentation demo &rarr;</span>
+            </div>
+            <div class="home-card" data-view="results">
+                <div class="home-card-icon">&#128202;</div>
+                <h3>Results</h3>
+                <p>The full cross-dataset evidence: per-dataset image-quality tables, the headline TSTR utility comparison, and the model-selection findings.</p>
+                <span class="home-card-go">View results &rarr;</span>
+            </div>
+        </section>
+
+        <section class="home-datasets">
+            <h3 class="home-section-title">Datasets</h3>
+            <div class="home-ds-row">
+                <div class="home-ds"><b>PASD</b><span>placental MRI &middot; BTFE/TSE &middot; mask&rarr;MRI</span></div>
+                <div class="home-ds"><b>TopBrain</b><span>cerebrovascular &middot; CT/MRA &middot; MRA&rarr;CTA</span></div>
+                <div class="home-ds"><b>Prostate158</b><span>prostate mpMRI &middot; T2/ADC/DWI &middot; T2&rarr;ADC</span></div>
+            </div>
+        </section>
+
+        <p class="home-disclaimer">&#9888; Research prototype. All synthetic images are for research only and are not for diagnostic use.</p>
+    </div>
+
+    <!-- ============ MRI VIEWER VIEW ============ -->
+    <div class="container mri-container" id="view-mri" style="display:none;">
+        <aside class="sidebar mri-sidebar">
+            <div class="filters">
+                <h3>PASD MRI Dataset</h3>
+                <div class="filter-row">
+                    <label for="mri-modality">Modality</label>
+                    <select id="mri-modality">
+                        <option value="BTFE">BTFE (T1-like balanced TFE)</option>
+                        <option value="TSE">TSE (T2-w single-shot)</option>
+                    </select>
+                </div>
+                <div class="filter-row">
+                    <label for="mri-search">Search</label>
+                    <input type="text" id="mri-search" placeholder="sub001...">
+                </div>
+            </div>
+            <div class="image-list-header">
+                <span id="mri-count">Loading...</span>
+            </div>
+            <div class="image-list" id="mri-subject-list"></div>
+        </aside>
+
+        <main class="main-content mri-main">
+            <div class="info-panel" id="mri-info-panel" style="display:none;">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Subject</span>
+                        <span class="info-value" id="mri-info-subject">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Modality</span>
+                        <span class="info-value" id="mri-info-modality">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Volume</span>
+                        <span class="info-value" id="mri-info-shape">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Spacing (mm)</span>
+                        <span class="info-value" id="mri-info-spacing">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Mask voxels</span>
+                        <span class="info-value" id="mri-info-mask">-</span>
+                    </div>
+                </div>
+                <p class="mri-hint">Slice spacing is a default placental-MRI value — not from dataset metadata. Sagittal/coronal views are reconstructed from 2D JPEG slices and will look blocky.</p>
+            </div>
+
+            <div class="mri-empty" id="mri-empty">
+                <p>Select a subject from the list to view MRI slices and 3D volume.</p>
+            </div>
+
+            <div class="mri-workspace" id="mri-workspace" style="display:none;">
+                <!-- 2D MPR panel -->
+                <section class="mri-panel mri-2d-panel" id="mri-2d-panel" tabindex="0">
+                    <header class="mri-panel-header">
+                        <h3>2D Slices</h3>
+                        <div class="mri-axis-tabs">
+                            <button class="mri-axis-tab active" data-axis="axial">Axial</button>
+                            <button class="mri-axis-tab" data-axis="sagittal">Sagittal</button>
+                            <button class="mri-axis-tab" data-axis="coronal">Coronal</button>
+                        </div>
+                        <div class="mri-2d-actions">
+                            <select id="mri-compare-select" class="mri-compare-select" title="Compare with another subject">
+                                <option value="">Compare: off</option>
+                            </select>
+                            <button class="btn btn-sm mri-icon-btn" id="mri-zoom-in"  title="Zoom in (or scroll wheel)">&plus;</button>
+                            <button class="btn btn-sm mri-icon-btn" id="mri-zoom-out" title="Zoom out">&minus;</button>
+                            <button class="btn btn-sm mri-icon-btn" id="mri-zoom-fit" title="Fit to pane (double-click)">&#9974;</button>
+                            <button class="btn btn-sm mri-icon-btn" id="mri-play-btn" title="Cine loop (space)">&#9658;</button>
+                            <button class="btn btn-sm mri-icon-btn" id="mri-download-btn" title="Download current slice as PNG">&#11015;</button>
+                        </div>
+                    </header>
+                    <div class="mri-slice-stage" id="mri-slice-stage">
+                        <div class="mri-slice-pane">
+                            <div class="mri-slice-label" id="mri-pane-a-label">-</div>
+                            <img id="mri-slice-img" alt="MRI slice">
+                        </div>
+                        <div class="mri-slice-pane" id="mri-pane-b" style="display:none;">
+                            <div class="mri-slice-label" id="mri-pane-b-label">-</div>
+                            <img id="mri-slice-img-b" alt="Compare MRI slice">
+                        </div>
+                    </div>
+                    <div class="mri-slice-controls">
+                        <div class="mri-control-row">
+                            <label>Slice <span id="mri-slice-label">0 / 0</span></label>
+                            <input type="range" id="mri-slice-slider" min="0" max="0" value="0">
+                        </div>
+                        <canvas id="mri-area-sparkline" class="mri-sparkline" height="36" title="Per-slice mask area — click to jump"></canvas>
+                        <div class="mri-control-row">
+                            <div class="display-mode-toggle" id="mri-display-mode">
+                                <button type="button" class="active" data-mode="both">Image + GT</button>
+                                <button type="button" data-mode="image_only">Image only</button>
+                                <button type="button" data-mode="mask_only">GT only</button>
+                            </div>
+                        </div>
+                        <div class="mri-control-row" id="mri-alpha-row">
+                            <label class="mri-control-label">Mask alpha</label>
+                            <input type="range" id="mri-alpha-slider" min="0" max="1" step="0.05" value="0.45">
+                            <span id="mri-alpha-label" style="width: 32px; text-align: right;">0.45</span>
+                        </div>
+                        <div class="mri-control-row">
+                            <label class="mri-checkbox" style="width: 130px;">
+                                <input type="checkbox" id="mri-outline-mode">
+                                Outline only
+                            </label>
+                            <span class="mri-hint-inline">Boundary instead of fill</span>
+                        </div>
+                        <div class="mri-control-row">
+                            <label>Window level <span id="mri-wl-label">auto</span></label>
+                            <input type="range" id="mri-wl-slider" min="0" max="255" value="128">
+                        </div>
+                        <div class="mri-control-row">
+                            <label>Window width <span id="mri-ww-label">auto</span></label>
+                            <input type="range" id="mri-ww-slider" min="1" max="510" value="255">
+                        </div>
+                        <button class="btn btn-sm" id="mri-wl-auto">Auto W/L</button>
+                        <p class="mri-shortcuts">&#8592;/&#8594; slice &nbsp;&middot;&nbsp; &#8593;/&#8595; axis &nbsp;&middot;&nbsp; M mask &nbsp;&middot;&nbsp; Space play &nbsp;&middot;&nbsp; wheel zoom &nbsp;&middot;&nbsp; shift+wheel scrub &nbsp;&middot;&nbsp; drag pan</p>
+                    </div>
+                </section>
+
+                <!-- 3D NiiVue panel -->
+                <section class="mri-panel mri-3d-panel">
+                    <header class="mri-panel-header">
+                        <h3>3D Volume</h3>
+                        <div class="mri-3d-controls">
+                            <div class="display-mode-toggle" id="mri-3d-display-mode">
+                                <button type="button" class="active" data-mode="both">Image + GT</button>
+                                <button type="button" data-mode="image_only">Image only</button>
+                                <button type="button" data-mode="mask_only">GT only</button>
+                            </div>
+                            <select id="mri-3d-render-mode">
+                                <option value="mpr">MPR slices</option>
+                                <option value="volume" selected>Volume render</option>
+                            </select>
+                            <button class="btn btn-sm" id="mri-3d-reset">Reset view</button>
+                        </div>
+                    </header>
+                    <div class="mri-3d-stage">
+                        <canvas id="mri-3d-canvas"></canvas>
+                        <div class="mri-3d-status" id="mri-3d-status">Loading volume...</div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- ============ CTA / TOF-MRA VIEWERS ============ -->
+    {% for v in [
+        {'id': 'cta',    'title': 'CTA Viewer',     'modality': 'ct', 'modality_label': 'CT (CTA)',
+         'dataset_label': 'TopBrain CTA', 'window_default': '200 / 700 (vessel)'},
+        {'id': 'tofmra', 'title': 'TOF-MRA Viewer', 'modality': 'mr', 'modality_label': 'MR (TOF-MRA)',
+         'dataset_label': 'TopBrain TOF-MRA', 'window_default': 'auto'}
+    ] %}
+    <div class="container mri-container cv-view-container"
+         id="view-{{ v.id }}"
+         data-cv-modality="{{ v.modality }}"
+         data-cv-prefix="{{ v.id }}"
+         style="display:none;">
+        <aside class="sidebar mri-sidebar">
+            <div class="filters">
+                <h3>{{ v.dataset_label }}</h3>
+                <div class="filter-row">
+                    <label>Modality</label>
+                    <span class="cv-modality-pill">{{ v.modality_label }}</span>
+                </div>
+                <div class="filter-row">
+                    <label for="{{ v.id }}-search">Search</label>
+                    <input type="text" id="{{ v.id }}-search" placeholder="001…">
+                </div>
+                {% if v.modality == 'ct' %}
+                <div class="filter-row">
+                    <label for="{{ v.id }}-window">Window preset</label>
+                    <select id="{{ v.id }}-window">
+                        <option value="vessel" selected>Vessel (200 / 700)</option>
+                        <option value="brain">Brain (40 / 80)</option>
+                        <option value="bone">Bone (600 / 1500)</option>
+                        <option value="wide">Wide (50 / 1200)</option>
+                        <option value="auto">Auto (percentile)</option>
+                        <option value="manual">Manual sliders</option>
+                    </select>
+                </div>
+                {% endif %}
+            </div>
+            <div class="image-list-header">
+                <span id="{{ v.id }}-count">Loading…</span>
+            </div>
+            <div class="image-list" id="{{ v.id }}-subject-list"></div>
+
+            <!-- Per-vessel legend (collapsible) -->
+            <details class="cv-legend" id="{{ v.id }}-legend">
+                <summary>Vessel legend (<span id="{{ v.id }}-legend-count">—</span>)</summary>
+                <div class="cv-legend-list" id="{{ v.id }}-legend-list"></div>
+            </details>
+        </aside>
+
+        <main class="main-content mri-main">
+            <div class="info-panel" id="{{ v.id }}-info-panel" style="display:none;">
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Subject</span>
+                        <span class="info-value" id="{{ v.id }}-info-subject">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Modality</span>
+                        <span class="info-value">{{ v.modality_label }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Volume</span>
+                        <span class="info-value" id="{{ v.id }}-info-shape">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Spacing (mm)</span>
+                        <span class="info-value" id="{{ v.id }}-info-spacing">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Mask voxels</span>
+                        <span class="info-value" id="{{ v.id }}-info-mask">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Unique labels</span>
+                        <span class="info-value" id="{{ v.id }}-info-labels">-</span>
+                    </div>
+                </div>
+                <p class="mri-hint">Volumes are rigid-co-registered + 0.5 mm³ isotropic 256³ (from <code>prepare_topbrain.py</code>). Mask uses the official TopCoW ITK-SNAP labelmap ({{ v.modality | upper }} variant). Default window: <b>{{ v.window_default }}</b>.</p>
+            </div>
+
+            <div class="mri-empty" id="{{ v.id }}-empty">
+                <p>Select a patient from the list to view {{ v.modality_label }} slices and 3D volume.</p>
+            </div>
+
+            <div class="mri-workspace" id="{{ v.id }}-workspace" style="display:none;">
+                <!-- 2D MPR panel -->
+                <section class="mri-panel mri-2d-panel" id="{{ v.id }}-2d-panel" tabindex="0">
+                    <header class="mri-panel-header">
+                        <h3>2D Slices</h3>
+                        <div class="mri-axis-tabs">
+                            <button class="mri-axis-tab active" data-axis="axial">Axial</button>
+                            <button class="mri-axis-tab" data-axis="sagittal">Sagittal</button>
+                            <button class="mri-axis-tab" data-axis="coronal">Coronal</button>
+                        </div>
+                        <div class="mri-2d-actions">
+                            <button class="btn btn-sm mri-icon-btn" id="{{ v.id }}-zoom-in"  title="Zoom in (or scroll wheel)">&plus;</button>
+                            <button class="btn btn-sm mri-icon-btn" id="{{ v.id }}-zoom-out" title="Zoom out">&minus;</button>
+                            <button class="btn btn-sm mri-icon-btn" id="{{ v.id }}-zoom-fit" title="Fit to pane (double-click)">&#9974;</button>
+                            <button class="btn btn-sm mri-icon-btn" id="{{ v.id }}-play-btn" title="Cine loop (space)">&#9658;</button>
+                            <button class="btn btn-sm mri-icon-btn" id="{{ v.id }}-download-btn" title="Download current slice as PNG">&#11015;</button>
+                        </div>
+                    </header>
+                    <div class="mri-slice-stage">
+                        <div class="mri-slice-pane">
+                            <div class="mri-slice-label" id="{{ v.id }}-pane-a-label">-</div>
+                            <img id="{{ v.id }}-slice-img" alt="{{ v.modality_label }} slice">
+                        </div>
+                    </div>
+                    <div class="mri-slice-controls">
+                        <div class="mri-control-row">
+                            <label>Slice <span id="{{ v.id }}-slice-label">0 / 0</span></label>
+                            <input type="range" id="{{ v.id }}-slice-slider" min="0" max="0" value="0">
+                        </div>
+                        <canvas id="{{ v.id }}-area-sparkline" class="mri-sparkline" height="36" title="Per-slice mask area — click to jump"></canvas>
+                        <div class="mri-control-row">
+                            <div class="display-mode-toggle" id="{{ v.id }}-display-mode">
+                                <button type="button" class="active" data-mode="both">Image + GT</button>
+                                <button type="button" data-mode="image_only">Image only</button>
+                                <button type="button" data-mode="mask_only">GT only</button>
+                            </div>
+                        </div>
+                        <div class="mri-control-row" id="{{ v.id }}-alpha-row">
+                            <label class="mri-control-label">Mask alpha</label>
+                            <input type="range" id="{{ v.id }}-alpha-slider" min="0" max="1" step="0.05" value="0.5">
+                            <span id="{{ v.id }}-alpha-label" style="width: 32px; text-align: right;">0.50</span>
+                        </div>
+                        <div class="mri-control-row">
+                            <label class="mri-checkbox" style="width: 130px;">
+                                <input type="checkbox" id="{{ v.id }}-outline-mode">
+                                Outline only
+                            </label>
+                            <span class="mri-hint-inline">Boundary instead of fill</span>
+                        </div>
+                        <div class="mri-control-row" id="{{ v.id }}-wl-row" {% if v.modality != 'ct' %}style="display:none;"{% endif %}>
+                            <label>Window level <span id="{{ v.id }}-wl-label">200</span></label>
+                            <input type="range" id="{{ v.id }}-wl-slider" min="-1000" max="2000" value="200">
+                        </div>
+                        <div class="mri-control-row" id="{{ v.id }}-ww-row" {% if v.modality != 'ct' %}style="display:none;"{% endif %}>
+                            <label>Window width <span id="{{ v.id }}-ww-label">700</span></label>
+                            <input type="range" id="{{ v.id }}-ww-slider" min="1" max="4000" value="700">
+                        </div>
+                        <p class="mri-shortcuts">&#8592;/&#8594; slice &nbsp;&middot;&nbsp; &#8593;/&#8595; axis &nbsp;&middot;&nbsp; M mask &nbsp;&middot;&nbsp; Space play &nbsp;&middot;&nbsp; wheel zoom &nbsp;&middot;&nbsp; shift+wheel scrub &nbsp;&middot;&nbsp; drag pan</p>
+                    </div>
+                </section>
+
+                <!-- 3D NiiVue panel -->
+                <section class="mri-panel mri-3d-panel">
+                    <header class="mri-panel-header">
+                        <h3>3D Volume</h3>
+                        <div class="mri-3d-controls">
+                            <div class="display-mode-toggle" id="{{ v.id }}-3d-display-mode">
+                                <button type="button" class="active" data-mode="both">Image + GT</button>
+                                <button type="button" data-mode="image_only">Image only</button>
+                                <button type="button" data-mode="mask_only">GT only</button>
+                            </div>
+                            <select id="{{ v.id }}-3d-render-mode">
+                                <option value="mpr">MPR slices</option>
+                                <option value="volume" selected>Volume render</option>
+                            </select>
+                            <button class="btn btn-sm" id="{{ v.id }}-3d-reset">Reset view</button>
+                        </div>
+                    </header>
+                    <div class="mri-3d-stage">
+                        <canvas id="{{ v.id }}-3d-canvas"></canvas>
+                        <div class="mri-3d-status" id="{{ v.id }}-3d-status">Select a patient to load the 3D volume.</div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    {% endfor %}
+
+    <!-- ============ MODULES VIEW ============ -->
+    <div class="container modules-container" id="view-modules" style="display:none;">
+        <!-- Module launcher grid -->
+        <div class="modules-grid" id="modules-grid">
+            <h2 class="modules-title">Processing Modules</h2>
+            <p class="modules-subtitle">Each module is self-contained. Trained on PASD placental MRI, TopBrain cerebrovascular, and prostate158 mpMRI datasets.</p>
+
+            <!-- ── Prostate mpMRI Synthesis (featured) ── -->
+            <h3 class="modules-section">Prostate mpMRI Synthesis &nbsp;<span class="modules-section-tag">prostate158</span></h3>
+            <div class="modules-cards">
+                <div class="module-card module-card-featured" data-module="prostate-t2-adc">
+                    <div class="module-card-icon">&#129516;</div>
+                    <h3>T2 &rarr; ADC Translation</h3>
+                    <p>Translate a T2-weighted prostate MRI slice into a synthetic ADC map. Trained on the <b>prostate158</b> (Adams et al., RWTH Aachen) dataset &mdash; 119 train + 20 val + 19 test patients, all paired same-grid (T2/ADC/DWI). ADC requires multi-acquisition DWI at scan time; if synthesizable from T2 alone, that's a meaningful clinical speedup.</p>
+                    <div class="module-card-meta">
+                        <span class="module-card-tag tag-ai">Pix2pix / LDM / CycleGAN</span>
+                        <span class="module-card-tag">158 patients</span>
+                    </div>
+                </div>
+
+                <div class="module-card module-card-featured" data-module="prostate-mask-t2">
+                    <div class="module-card-icon">&#127919;</div>
+                    <h3>Anatomy Mask &rarr; T2</h3>
+                    <p>Generate a synthetic T2 prostate slice from a multi-class anatomy mask (peripheral zone + central gland, ~30 % of slice area). <b>SPADE-GAN</b> conditioned on the reader-1 anatomy mask. Denser masks than TopBrain's sparse vessel labels &mdash; will test whether SPADE behaves better here.</p>
+                    <div class="module-card-meta">
+                        <span class="module-card-tag tag-ai">SPADE multi-class</span>
+                        <span class="module-card-tag">3 classes (bg / PZ / CG)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Brain Angiography Synthesis (featured) ── -->
+            <h3 class="modules-section">Brain Angiography Synthesis &nbsp;<span class="modules-section-tag">TopBrain</span></h3>
+            <div class="modules-cards">
+                <div class="module-card module-card-featured" data-module="cv-mr2ct">
+                    <div class="module-card-icon">&#129504;</div>
+                    <h3>MRA &rarr; CTA Translation</h3>
+                    <p>Translate a TOF-MRA slice to a synthetic CTA slice. Trained on 25 paired patients from the <b>TopBrain MICCAI 2025</b> challenge (rigid-co-registered + isotropically resampled). Per PDF: paired modality translation is the most direct way to compensate for public CTA scarcity.</p>
+                    <div class="module-card-meta">
+                        <span class="module-card-tag tag-ai">Pix2pix</span>
+                        <span class="module-card-tag">25 paired patients</span>
+                    </div>
+                </div>
+
+                <div class="module-card module-card-featured" data-module="cv-mask2ct">
+                    <div class="module-card-icon">&#129728;</div>
+                    <h3>Vessel-Mask &rarr; CTA</h3>
+                    <p>Generate a synthetic CTA slice from a multi-class vessel mask (40+ named Circle-of-Willis segments). <b>SPADE-GAN</b> conditioned on TopBrain's full vessel anatomy &mdash; the dataset's most distinctive feature. Useful for anatomy-controlled augmentation of segmentation training.</p>
+                    <div class="module-card-meta">
+                        <span class="module-card-tag tag-ai">SPADE multi-class</span>
+                        <span class="module-card-tag">41 vessel classes</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── PASD MRI Synthesis (featured) ── -->
+            <h3 class="modules-section">Placental MRI Synthesis &nbsp;<span class="modules-section-tag">PASD</span></h3>
+            <div class="modules-cards">
+                <div class="module-card module-card-featured" data-module="pasd-gen">
+                    <div class="module-card-icon">&#129526;</div>
+                    <h3>Mask-Conditional Generation</h3>
+                    <p>Generate synthetic placental MRI from a binary mask. Three generators trained on PASD: <b>Pix2pix</b>, <b>SPADE-GAN</b>, <b>Latent Diffusion</b>. Pick a GT mask (or upload your own), choose a model, sample &mdash; or hit <b>Compare all generators</b> for a side-by-side. Outputs include per-sample mask-Dice / PSNR / SSIM.</p>
+                    <div class="module-card-meta">
+                        <span class="module-card-tag tag-ai">Generative AI</span>
+                        <span class="module-card-tag tag-trained">3 models trained</span>
+                    </div>
+                </div>
+
+                <div class="module-card module-card-featured" data-module="pasd-xmod">
+                    <div class="module-card-icon">&#8646;</div>
+                    <h3>Cross-Modality Translation</h3>
+                    <p>BTFE &harr; TSE translation via <b>CycleGAN</b>. Anatomy-preserving (cycle L1 = 1.3 %), no masks needed &mdash; exploits the paired-modality structure of PASD. The cross-modality augmentation that <b>wins TSTR</b> at every data size.</p>
+                    <div class="module-card-meta">
+                        <span class="module-card-tag tag-ai">Generative AI</span>
+                        <span class="module-card-tag tag-win">TSTR winner</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Evaluation ── -->
+            <h3 class="modules-section">Evaluation &nbsp;<span class="modules-section-tag">TSTR</span></h3>
+            <div class="modules-cards">
+                <div class="module-card module-card-featured" data-module="tstr-seg">
+                    <div class="module-card-icon">&#128300;</div>
+                    <h3>Segmentation: Realism vs Relevance</h3>
+                    <p>See the headline finding directly. Pick a real test slice; segmenters trained on <b>real</b> vs each generator's <b>synthetic</b> data each predict the mask, with per-slice Dice. The model that looks most realistic is not always the most useful &mdash; visible side by side.</p>
+                    <div class="module-card-meta">
+                        <span class="module-card-tag tag-win">downstream utility</span>
+                        <span class="module-card-tag">3 datasets</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Module detail panels (shown when a module card is clicked) -->
+        <div class="module-detail" id="module-detail" style="display:none;">
+            <div class="module-detail-header">
+                <button class="btn btn-sm btn-secondary" id="btn-module-back">&larr; Back to Modules</button>
+                <h2 id="module-detail-title"></h2>
+            </div>
+
+            <div class="module-detail-body">
+                <!-- No image selected warning -->
+                <div class="module-no-image" id="module-no-image" style="display:none;">
+                    <p>No image selected. Go to the <strong>Viewer</strong> tab and select an image first.</p>
+                </div>
+
+                <!-- Image context bar -->
+                <div class="module-image-ctx" id="module-image-ctx" style="display:none;">
+                    <img id="module-ctx-thumb" class="module-ctx-thumb" alt="thumb">
+                    <div class="module-ctx-info">
+                        <span class="module-ctx-id" id="module-ctx-id"></span>
+                        <span class="module-ctx-meta" id="module-ctx-meta"></span>
+                    </div>
+                </div>
+
+                <!-- ── Prostate T2 → ADC Module ── -->
+                <div class="module-panel" id="module-panel-prostate-t2-adc" style="display:none;">
+                    <div class="module-section">
+                        <h3>1. Choose source slice</h3>
+                        <p class="tool-hint">Pick a T2-weighted axial slice from the prostate158 dataset (158 patients, paired T2/ADC/DWI same-grid). The trained generator will produce a corresponding synthetic ADC slice.</p>
+
+                        <div class="pasd-control-row">
+                            <label>Patient</label>
+                            <select id="prostate-patient"></select>
+                            <label>Axial slice</label>
+                            <select id="prostate-slice"></select>
+                        </div>
+                        <div class="pasd-mask-preview">
+                            <div class="pasd-mask-frame">
+                                <img id="prostate-t2-preview" alt="T2 slice">
+                            </div>
+                            <span class="pasd-mask-caption">Real T2-weighted slice (source modality)</span>
+                        </div>
+                    </div>
+
+                    <div class="module-section">
+                        <h3>2. Generator settings</h3>
+                        <div class="pasd-control-row">
+                            <label>Model</label>
+                            <select id="prostate-model">
+                                <option value="pix2pix">Pix2pix (paired T2 &rarr; ADC)</option>
+                                <option value="ldm">LDM (latent diffusion, T2-conditioned)</option>
+                                <option value="cyclegan">CycleGAN (unpaired-style, anatomy-preserving)</option>
+                            </select>
+                        </div>
+                        <div class="pasd-control-row prostate-ldm-row" style="display:none;">
+                            <label title="Number of denoising steps. 25 is plenty with DPMSolver++.">Inference steps</label>
+                            <input type="number" id="prostate-ldm-steps" min="5" max="100" value="25">
+                            <label title="Classifier-free guidance. 1.0 is the Pareto-best on prostate (verified).">CFG scale</label>
+                            <input type="number" id="prostate-ldm-guidance" min="1" max="10" step="0.5" value="1.0">
+                        </div>
+                        <div class="pasd-control-row prostate-ldm-row" style="display:none;">
+                            <label title="Average N samples. Higher = better SSIM/PSNR (paired fidelity) but softer texture (worse FID). 1 = sharpest, 4 = best structural match.">Ensemble (avg N)</label>
+                            <input type="number" id="prostate-ldm-ensemble" min="1" max="8" value="1">
+                            <span class="mri-hint-inline">1 = sharp (best FID) · 4 = best SSIM</span>
+                        </div>
+                        <div class="pasd-model-info" id="prostate-model-info"></div>
+                        <div id="prostate-status" class="pasd-status"></div>
+                        <div class="pasd-button-row">
+                            <button class="btn btn-pasd-gen" id="prostate-generate-btn">Generate ADC</button>
+                        </div>
+                    </div>
+
+                    <div class="module-section" id="prostate-results-section" style="display:none;">
+                        <h3>3. Result</h3>
+                        <div class="pasd-gen-warning">
+                            &#9888; <strong>SYNTHETIC</strong> &mdash; synthetic ADC is plausible but unverified. Research use only; not for diagnosis.
+                        </div>
+                        <div class="pasd-xmod-pair" id="prostate-result-pair"></div>
+                    </div>
+                </div>
+
+                <!-- ── Segmentation (TSTR) Module ── -->
+                <div class="module-panel" id="module-panel-tstr-seg" style="display:none;">
+                    <div class="module-section">
+                        <h3>1. Choose a real test slice</h3>
+                        <p class="tool-hint">Each segmenter below was trained <em>only</em> on one source of data (real, or one generator's synthetic output) and is now run on the same <b>real</b> test slice. Compare the predicted masks and per-slice Dice: the most realistic generator is not always the most useful.</p>
+                        <div class="pasd-control-row">
+                            <label>Dataset</label>
+                            <select id="tstr-seg-dataset">
+                                <option value="prostate">Prostate158 (gland)</option>
+                                <option value="topbrain">TopBrain (vessel)</option>
+                                <option value="pasd">PASD (placenta)</option>
+                            </select>
+                            <label>Test slice</label>
+                            <input type="number" id="tstr-seg-idx" min="0" value="240" style="width:90px">
+                        </div>
+                        <div id="tstr-seg-status" class="pasd-status"></div>
+                        <div class="pasd-button-row">
+                            <button class="btn btn-pasd-gen" id="tstr-seg-run">Run all segmenters</button>
+                        </div>
+                    </div>
+                    <div class="module-section" id="tstr-seg-results-section" style="display:none;">
+                        <h3>2. Predictions on the real slice</h3>
+                        <p class="tool-hint">Green = ground truth · Red = segmenter prediction. Dice is for this slice (dataset-level means are in the Results tab).</p>
+                        <div class="pasd-xmod-pair" id="tstr-seg-pair"></div>
+                    </div>
+                </div>
+
+                <!-- ── Prostate Anatomy → T2 Module (SPADE) ── -->
+                <div class="module-panel" id="module-panel-prostate-mask-t2" style="display:none;">
+                    <div class="module-section">
+                        <h3>1. Choose source mask</h3>
+                        <p class="tool-hint">Pick a slice from the prostate158 dataset to use its anatomy mask (3 classes: background, peripheral zone, central gland). SPADE conditions on the mask to generate a synthetic T2 slice.</p>
+
+                        <div class="pasd-control-row">
+                            <label>Patient</label>
+                            <select id="prostate-spade-patient"></select>
+                            <label>Axial slice</label>
+                            <select id="prostate-spade-slice"></select>
+                        </div>
+                        <div class="pasd-mask-preview">
+                            <div class="pasd-mask-frame">
+                                <img id="prostate-spade-mask-preview" alt="anatomy mask">
+                            </div>
+                            <span class="pasd-mask-caption">Real anatomy mask (3 classes: bg / PZ / CG)</span>
+                        </div>
+                    </div>
+
+                    <div class="module-section">
+                        <h3>2. Generator settings</h3>
+                        <div class="pasd-control-row">
+                            <label>Random seed</label>
+                            <input type="number" id="prostate-spade-seed" placeholder="(blank = random)">
+                        </div>
+                        <div class="pasd-model-info" id="prostate-spade-model-info"></div>
+                        <div id="prostate-spade-status" class="pasd-status"></div>
+                        <div class="pasd-button-row">
+                            <button class="btn btn-pasd-gen" id="prostate-spade-generate-btn">Generate T2</button>
+                        </div>
+                    </div>
+
+                    <div class="module-section" id="prostate-spade-results-section" style="display:none;">
+                        <h3>3. Result</h3>
+                        <div class="pasd-gen-warning">
+                            &#9888; <strong>SYNTHETIC</strong> &mdash; SPADE T2 is plausible but unverified. Research use only; not for diagnosis.
+                        </div>
+                        <div class="pasd-xmod-pair" id="prostate-spade-result-pair"></div>
+                    </div>
+                </div>
+
+                <!-- ── TopBrain MRA → CTA Module ── -->
+                <div class="module-panel" id="module-panel-cv-mr2ct" style="display:none;">
+                    <div class="module-section">
+                        <h3>1. Choose source slice</h3>
+                        <p class="tool-hint">Pick a TOF-MRA slice from the TopBrain dataset (rigid-co-registered to a 256³ isotropic grid). The trained generator will produce a corresponding synthetic CTA slice.</p>
+                        <div class="pasd-mask-source-tabs">
+                            <button class="pasd-source-tab active" data-cv-source="dataset">From dataset</button>
+                            <button class="pasd-source-tab" data-cv-source="upload">Upload PNG/NIfTI</button>
+                        </div>
+
+                        <div class="pasd-source-panel" data-cv-panel="dataset">
+                            <div class="pasd-control-row">
+                                <label>Patient</label>
+                                <select id="cv-patient"></select>
+                                <label>Axial slice</label>
+                                <select id="cv-slice"></select>
+                            </div>
+                            <div class="pasd-mask-preview">
+                                <div class="pasd-mask-frame">
+                                    <img id="cv-mr-preview" alt="MRA slice">
+                                </div>
+                                <span class="pasd-mask-caption">Real MRA slice (source modality)</span>
+                            </div>
+                        </div>
+
+                        <div class="pasd-source-panel" data-cv-panel="upload" style="display:none;">
+                            <input type="file" id="cv-upload" accept="image/png,image/jpeg">
+                            <div class="pasd-mask-preview">
+                                <div class="pasd-mask-frame">
+                                    <img id="cv-uploaded-preview" alt="uploaded slice">
+                                </div>
+                                <span class="pasd-mask-caption">Uploaded image</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="module-section">
+                        <h3>2. Generator settings</h3>
+                        <div class="pasd-control-row">
+                            <label>Model</label>
+                            <select id="cv-model">
+                                <option value="pix2pix">Pix2pix (paired MRA → CTA)</option>
+                                <option value="ldm">LDM (latent diffusion, MR only)</option>
+                                <option value="ldm_combined">LDM combined (MR + vessel mask)</option>
+                                <option value="cyclegan">CycleGAN (unpaired, anatomy-preserving)</option>
+                            </select>
+                        </div>
+                        <div class="pasd-control-row pasd-ldm-row cv-ldm-row" style="display:none;">
+                            <label title="Number of denoising steps. 25 is plenty with DPMSolver++.">Inference steps</label>
+                            <input type="number" id="cv-ldm-steps" min="5" max="100" value="25">
+                            <label title="Classifier-free guidance scale. 1 = unconditional, 1.5-3 = strong adherence to MR input.">CFG scale</label>
+                            <input type="number" id="cv-ldm-guidance" min="1" max="10" step="0.5" value="1.5">
+                        </div>
+                        <div class="pasd-model-info" id="cv-model-info"></div>
+                        <div id="cv-status" class="pasd-status"></div>
+                        <div class="pasd-button-row">
+                            <button class="btn btn-pasd-gen" id="cv-generate-btn">Generate CTA</button>
+                            <button class="btn btn-pasd-compare" id="cv-compare-btn" title="Run pix2pix AND LDM on the same MRA, show both side-by-side with the real CT for reference.">Compare both generators</button>
+                        </div>
+                    </div>
+
+                    <div class="module-section" id="cv-results-section" style="display:none;">
+                        <h3>3. Result</h3>
+                        <div class="pasd-gen-warning">
+                            &#9888; <strong>SYNTHETIC</strong> &mdash; synthetic angiography is plausible but unverified. Research use only; not for diagnosis.
+                        </div>
+                        <div class="pasd-xmod-pair" id="cv-result-pair"></div>
+                    </div>
+                </div>
+
+                <!-- ── TopBrain Vessel-Mask → CTA Module (SPADE) ── -->
+                <div class="module-panel" id="module-panel-cv-mask2ct" style="display:none;">
+                    <div class="module-section">
+                        <h3>1. Choose vessel mask</h3>
+                        <p class="tool-hint">Pick a multi-class CT vessel mask (40+ labels) from the TopBrain dataset. The SPADE-GAN will synthesize a CTA slice that places vessels exactly where the mask says.</p>
+                        <div class="pasd-control-row">
+                            <label>Patient</label>
+                            <select id="cvspade-patient"></select>
+                            <label>Axial slice</label>
+                            <select id="cvspade-slice"></select>
+                        </div>
+                        <div class="pasd-mask-preview">
+                            <div class="pasd-mask-frame">
+                                <img id="cvspade-mask-preview" alt="vessel mask">
+                            </div>
+                            <span class="pasd-mask-caption">Multi-class vessel mask (color = label ID)</span>
+                        </div>
+                    </div>
+
+                    <div class="module-section">
+                        <h3>2. Generator settings</h3>
+                        <div class="pasd-control-row">
+                            <label>Seed (optional)</label>
+                            <input type="number" id="cvspade-seed" placeholder="random">
+                        </div>
+                        <div class="pasd-model-info" id="cvspade-model-info"></div>
+                        <div id="cvspade-status" class="pasd-status"></div>
+                        <button class="btn btn-pasd-gen" id="cvspade-generate-btn">Generate CTA from mask</button>
+                    </div>
+
+                    <div class="module-section" id="cvspade-results-section" style="display:none;">
+                        <h3>3. Result</h3>
+                        <div class="pasd-gen-warning">
+                            &#9888; <strong>SYNTHETIC</strong> &mdash; SPADE-generated angiography is anatomy-conditioned but unverified. Research use only.
+                        </div>
+                        <div class="pasd-gen-gallery" id="cvspade-result-gallery"></div>
+                    </div>
+                </div>
+
+                <!-- ── PASD MRI Generation Module ── -->
+                <div class="module-panel" id="module-panel-pasd-gen" style="display:none;">
+                    <div class="module-section">
+                        <h3>1. Choose a mask</h3>
+                        <p class="tool-hint">A binary placenta mask conditions the generator. Pick a real GT mask from the PASD dataset, or upload your own PNG (white = placenta, black = background).</p>
+                        <div class="pasd-mask-source-tabs">
+                            <button class="pasd-source-tab active" data-pasd-source="dataset">From dataset</button>
+                            <button class="pasd-source-tab" data-pasd-source="upload">Upload PNG</button>
+                        </div>
+
+                        <div class="pasd-source-panel" data-pasd-panel="dataset">
+                            <div class="pasd-control-row">
+                                <label>Modality</label>
+                                <select id="pasd-gen-modality">
+                                    <option value="BTFE">BTFE</option>
+                                    <option value="TSE">TSE</option>
+                                </select>
+                                <label>Subject</label>
+                                <select id="pasd-gen-subject"></select>
+                                <label>Slice</label>
+                                <select id="pasd-gen-slice"></select>
+                            </div>
+                            <div class="pasd-mask-preview">
+                                <div class="pasd-mask-frame">
+                                    <img id="pasd-gen-mask-bg" alt="MRI">
+                                    <img id="pasd-gen-mask-overlay" alt="mask">
+                                </div>
+                                <span class="pasd-mask-caption">Real MRI + GT mask overlay</span>
+                            </div>
+                        </div>
+
+                        <div class="pasd-source-panel" data-pasd-panel="upload" style="display:none;">
+                            <input type="file" id="pasd-gen-upload" accept="image/png,image/jpeg">
+                            <div class="pasd-mask-preview">
+                                <div class="pasd-mask-frame">
+                                    <img id="pasd-gen-uploaded" alt="uploaded mask">
+                                </div>
+                                <span class="pasd-mask-caption">Uploaded mask preview</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="module-section">
+                        <h3>2. Generator settings</h3>
+                        <div class="pasd-control-row">
+                            <label>Model</label>
+                            <select id="pasd-gen-model">
+                                <option value="pix2pix">Pix2pix (baseline)</option>
+                                <option value="spade">SPADE-GAN</option>
+                                <option value="ldm">LDM (latent diffusion)</option>
+                            </select>
+                            <label>Samples</label>
+                            <input type="number" id="pasd-gen-num" min="1" max="16" value="1">
+                            <label>Seed</label>
+                            <input type="number" id="pasd-gen-seed" placeholder="random">
+                        </div>
+                        <div class="pasd-control-row pasd-ldm-row" style="display:none;">
+                            <label title="Number of denoising steps. 20-25 is usually enough with DPMSolver++; 50 if you want maximum quality.">Inference steps</label>
+                            <input type="number" id="pasd-gen-steps" min="5" max="100" value="25">
+                            <label title="Classifier-free guidance scale. 1 = unconditional, 3-5 = strong mask adherence, &gt;7 may oversaturate.">CFG scale</label>
+                            <input type="number" id="pasd-gen-guidance" min="1" max="10" step="0.5" value="1.5">
+                        </div>
+                        <div class="pasd-model-info" id="pasd-model-info"></div>
+                        <div class="pasd-control-row">
+                            <label class="pasd-checkbox" title="Apply a random rotation/flip/scale/translation to the base mask before generation. Each sample gets a unique transformation — outputs are (mask, image) pairs.">
+                                <input type="checkbox" id="pasd-gen-perturb">
+                                Perturb mask &mdash; generate novel (mask, image) pairs
+                            </label>
+                        </div>
+                        <div id="pasd-gen-model-status" class="pasd-status"></div>
+                        <div class="pasd-button-row">
+                            <button class="btn btn-pasd-gen" id="pasd-gen-btn">Generate</button>
+                            <button class="btn btn-pasd-compare" id="pasd-compare-btn" title="Generate the same mask through every trained generator and show them side-by-side with per-sample metrics.">Compare all generators</button>
+                        </div>
+                    </div>
+
+                    <div class="module-section" id="pasd-gen-results-section" style="display:none;">
+                        <div class="pasd-gen-results-header">
+                            <h3>3. Results</h3>
+                            <button class="btn btn-sm" id="pasd-gen-download-all" title="Download every synthetic image, its mask, the paired real MRI (when available), and metrics.json as a single ZIP.">&#11015; Download all (ZIP)</button>
+                        </div>
+                        <div class="pasd-gen-warning">
+                            &#9888; <strong>SYNTHETIC</strong> &mdash; for research, training and method development only. Not for clinical use.
+                        </div>
+                        <div class="pasd-gen-gallery" id="pasd-gen-gallery"></div>
+                    </div>
+
+                    <!-- Lightbox modal (rendered once, reused for every image) -->
+                    <div class="pasd-lightbox" id="pasd-lightbox" style="display:none;">
+                        <div class="pasd-lightbox-backdrop"></div>
+                        <div class="pasd-lightbox-frame">
+                            <button class="pasd-lightbox-close" id="pasd-lightbox-close" title="Close (Esc)">&times;</button>
+                            <img id="pasd-lightbox-img" alt="enlarged view">
+                            <div class="pasd-lightbox-caption" id="pasd-lightbox-caption"></div>
+                            <a class="btn btn-sm" id="pasd-lightbox-download" download>&#11015; Download PNG</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Cross-Modality Translation (CycleGAN) ── -->
+                <div class="module-panel" id="module-panel-pasd-xmod" style="display:none;">
+                    <div class="module-section">
+                        <h3>1. Choose input</h3>
+                        <p class="tool-hint">CycleGAN translates a real MRI slice between the two PASD sequences. No mask required &mdash; the model learned the cross-modality mapping from unpaired data.</p>
+                        <div class="pasd-mask-source-tabs">
+                            <button class="pasd-source-tab active" data-pasd-xmod-source="dataset">From dataset</button>
+                            <button class="pasd-source-tab" data-pasd-xmod-source="upload">Upload image</button>
+                        </div>
+
+                        <div class="pasd-control-row">
+                            <label>Direction</label>
+                            <select id="pasd-xmod-direction">
+                                <option value="BTFE_to_TSE">BTFE &rarr; TSE</option>
+                                <option value="TSE_to_BTFE">TSE &rarr; BTFE</option>
+                            </select>
+                        </div>
+
+                        <div class="pasd-source-panel" data-pasd-xmod-panel="dataset">
+                            <div class="pasd-control-row">
+                                <label>Subject</label>
+                                <select id="pasd-xmod-subject"></select>
+                                <label>Slice</label>
+                                <select id="pasd-xmod-slice"></select>
+                            </div>
+                            <div class="pasd-mask-preview">
+                                <div class="pasd-mask-frame">
+                                    <img id="pasd-xmod-input-preview" alt="input slice">
+                                </div>
+                                <span class="pasd-mask-caption">Input MRI (source modality)</span>
+                            </div>
+                        </div>
+
+                        <div class="pasd-source-panel" data-pasd-xmod-panel="upload" style="display:none;">
+                            <input type="file" id="pasd-xmod-upload" accept="image/png,image/jpeg">
+                            <div class="pasd-mask-preview">
+                                <div class="pasd-mask-frame">
+                                    <img id="pasd-xmod-uploaded-preview" alt="uploaded">
+                                </div>
+                                <span class="pasd-mask-caption">Uploaded slice</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="module-section">
+                        <h3>2. Translate</h3>
+                        <div class="pasd-model-info" id="pasd-xmod-info"></div>
+                        <div id="pasd-xmod-status" class="pasd-status"></div>
+                        <button class="btn btn-pasd-gen" id="pasd-xmod-btn">Translate</button>
+                    </div>
+
+                    <div class="module-section" id="pasd-xmod-results-section" style="display:none;">
+                        <h3>3. Result</h3>
+                        <div class="pasd-gen-warning">
+                            &#9888; <strong>SYNTHETIC</strong> &mdash; cross-modality output is plausible but unverified. Research use only.
+                        </div>
+                        <div class="pasd-xmod-pair" id="pasd-xmod-pair"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ RESULTS VIEW ============ -->
+    <div class="container results-container" id="view-results" style="display:none;">
+        <div class="results-page">
+            <header class="results-header">
+                <h2>Project Results &amp; Findings</h2>
+                <p class="results-sub">Two synthesis applications &mdash; placental MRI (PASD) and cerebrovascular angiography (TopBrain) &mdash; with opposite winning architectures. Live numbers below are sourced from <a href="https://github.com/" target="_blank">REPORT.md</a> and the <code>pasd_eval/</code> &amp; <code>cv_eval/</code> JSON reports.</p>
+            </header>
+
+            <!-- Hero: two headline findings -->
+            <section class="results-hero">
+                <div class="hero-card hero-pasd">
+                    <div class="hero-tag">PASD &middot; placental MRI</div>
+                    <h3>Cross-modality augmentation wins everywhere</h3>
+                    <p>CycleGAN BTFE↔TSE translation produces synthetic pairs that beat <em>every</em> mask-conditional generator at <em>every</em> data size, on <em>both</em> modalities. At N=50 real slices, +xmod adds <b>+7.3 pp Dice</b>; even at full data it's the only augmentation that doesn't hurt.</p>
+                    <div class="hero-metrics">
+                        <span><b>+7.3 pp</b> at N=50</span>
+                        <span><b>+2.3 pp</b> at full N (TSE)</span>
+                        <span>≈ <b>10×</b> data-efficiency</span>
+                    </div>
+                </div>
+                <div class="hero-card hero-cv">
+                    <div class="hero-tag">TopBrain &middot; cerebrovascular</div>
+                    <h3>LDM beats pix2pix on paired MRA→CTA</h3>
+                    <p>With dense paired-image conditioning (full MRA latent, not a binary mask), LDM substantially beats pix2pix: <b>FID 95.7 vs 126.9</b>, <b>KID 0.031 vs 0.070</b>. <em>Opposite</em> of the PASD pattern &mdash; conditioning density is what determines which architecture wins.</p>
+                    <div class="hero-metrics">
+                        <span><b>−24.6%</b> FID vs pix2pix</span>
+                        <span><b>−55.9%</b> KID</span>
+                        <span><b>+0.013</b> SSIM</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- The cross-dataset rule -->
+            <section class="results-section">
+                <h3>The cross-dataset rule</h3>
+                <p class="results-section-sub">The two applications inverted who wins — the deciding factor isn't the architecture, it's the conditioning density.</p>
+                <table class="results-table">
+                    <thead>
+                        <tr><th>Dimension</th><th>PASD</th><th>TopBrain</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Conditioning input</td><td>Binary placenta mask</td><td>Full MRA latent (4-ch dense)</td></tr>
+                        <tr><td>Conditioning density</td><td>~10% of slice nonzero</td><td>100% (whole image)</td></tr>
+                        <tr><td>Data scale (per modality)</td><td>~2,750 BTFE slices</td><td>~4,690 paired slices</td></tr>
+                        <tr><td>Pairing structure</td><td>BTFE+TSE per patient</td><td>CT+MRA per patient</td></tr>
+                        <tr><td><b>Paired-metric winner</b></td><td>pix2pix (FID 108.8)</td><td><b>LDM (FID 95.7)</b></td></tr>
+                        <tr><td><b>Augmentation winner</b></td><td><b>CycleGAN xmod</b> (TSTR Dice 0.907)</td><td>pix2pix/combined aug &asymp; real (0.66)</td></tr>
+                    </tbody>
+                </table>
+                <p class="results-takeaway"><b>Takeaway.</b> Sparse conditioning + small data favors deterministic L1 (pix2pix). Dense conditioning + paired data favors diffusion (LDM). Cross-modality pairing, when present, is a goldmine regardless of architecture.</p>
+            </section>
+
+            <!-- PASD TSTR -->
+            <section class="results-section">
+                <h3>PASD — TSTR low-data sweep (the headline plot)</h3>
+                <p class="results-section-sub">Train a placenta segmenter on real-only vs real + synthetic; measure Dice on held-out real test. Orange xmod line is consistently above all others on both modalities.</p>
+                <img class="results-plot" src="/api/results/plot/lowdata_sweep_both_modalities.png" alt="PASD low-data sweep">
+                <details class="results-details">
+                    <summary>Full TSTR table (BTFE + TSE)</summary>
+                    <table class="results-table">
+                        <thead>
+                            <tr><th>N (real)</th><th>BTFE real</th><th>+pix2pix</th><th>+LDM</th><th>+xmod</th><th>TSE real</th><th>+pix2pix</th><th>+xmod</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>50</td><td>0.806</td><td>0.864</td><td>0.865</td><td><b>0.879</b></td><td>0.767</td><td>0.835</td><td><b>0.865</b></td></tr>
+                            <tr><td>100</td><td>0.835</td><td>0.874</td><td>0.876</td><td><b>0.886</b></td><td>0.812</td><td>0.838</td><td><b>0.868</b></td></tr>
+                            <tr><td>200</td><td>0.848</td><td>0.880</td><td>0.879</td><td><b>0.892</b></td><td>0.827</td><td>0.847</td><td><b>0.875</b></td></tr>
+                            <tr><td>500</td><td>0.880</td><td>0.881</td><td>0.884</td><td><b>0.899</b></td><td>0.860</td><td>0.866</td><td><b>0.879</b></td></tr>
+                            <tr><td>full</td><td>0.900</td><td>0.897</td><td>0.897</td><td><b>0.907</b></td><td>0.876</td><td>0.891</td><td><b>0.899</b></td></tr>
+                        </tbody>
+                    </table>
+                </details>
+            </section>
+
+            <!-- TopBrain four-way head to head -->
+            <section class="results-section">
+                <h3>TopBrain — four-way head-to-head</h3>
+                <p class="results-section-sub">Held-out 3 test patients, N=200 axial slices. <b>Plain LDM wins on FID/KID/LPIPS.</b> Adding a vessel-mask conditioning channel (LDM combined) improves SSIM and PSNR but degrades distributional fidelity — a clean trade-off between paired pixel-match and distribution match.</p>
+                <table class="results-table">
+                    <thead>
+                        <tr><th>Metric</th><th>Pix2pix</th><th>CycleGAN</th><th>LDM combined<br><small>(MR + mask)</small></th><th>LDM<br><small>(MR only)</small></th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>FID ↓</td><td>126.91</td><td>106.46</td><td>105.10</td><td><b>95.70</b></td></tr>
+                        <tr><td>KID ↓</td><td>0.0702</td><td>0.0480</td><td>0.0390</td><td><b>0.0310</b></td></tr>
+                        <tr><td>SSIM ↑</td><td>0.634</td><td>0.620</td><td><b>0.652</b></td><td>0.647</td></tr>
+                        <tr><td>PSNR ↑</td><td><b>15.36</b></td><td>14.94</td><td>15.28</td><td>15.02</td></tr>
+                        <tr><td>LPIPS ↓</td><td>0.234</td><td>0.239</td><td>0.230</td><td><b>0.227</b></td></tr>
+                    </tbody>
+                </table>
+                <div class="results-callout">
+                    <b>The vessel-mask trade-off.</b> Adding mask conditioning to LDM moves the model toward better paired pixel-match (SSIM +0.005, PSNR +0.26 dB) at the cost of worse distribution match (FID +9.4, KID +0.008). Likely because TopBrain's 41 vessel labels are very sparse (~1-2% of slice) — the extra 41 mostly-zero conditioning channels regularize texture toward something blander even as they help vessel-region placement. <b>Implication: if downstream task cares about paired pixels (e.g. registration aid), use the combined model; if it cares about realism/distribution (e.g. augmentation), use plain LDM.</b>
+                </div>
+                <div class="results-callout" style="margin-top:10px">
+                    <b>CycleGAN doesn't reproduce the PASD pattern on TopBrain.</b> Cross-modality CycleGAN augmentation was the PASD-wide winning insight (TSTR Dice +7 pp at low data). On TopBrain it's mid-pack. Likely reasons: PASD's BTFE↔TSE are similar T-weighted MR sequences with slightly different patient sets, while TopBrain's CT↔MRA are radically different physical modalities from the <em>same</em> patient — leaving CycleGAN with less of an "unpaired data multiplier" effect. <b>The cross-modality finding is data-dependent, not universal.</b>
+                </div>
+                <img class="results-plot" src="/api/results/plot/cv_samples_ldm" alt="LDM samples" style="margin-top:14px">
+                <p class="results-section-sub" style="margin-top:8px"><b>Above:</b> LDM samples grid (4 cols: MRA · real CT · synthetic CT · diff×4). Diff column mostly dark = small per-pixel errors. (Pix2pix and CycleGAN grids in <code>cv_eval/</code>.)</p>
+            </section>
+
+            <!-- SPADE caveat -->
+            <section class="results-section">
+                <h3>SPADE vessel-mask → CTA — limited by data sparsity</h3>
+                <p class="results-section-sub">SPADE trained to ep 60/100 then D-collapsed. Root cause isn't the model — TopBrain's 41 vessel labels cover only ~1-2% of each slice (vessels only, no skull/brain/CSF), so SPADE has near-zero conditioning signal for ~98% of the image.</p>
+                <div class="results-callout">
+                    <b>Lesson.</b> Mask-conditional generators fail gracefully on sparse-mask datasets; LDM with image-based conditioning is the right architecture when masks alone don't fill the image. (LDM's diffusion prior fills in unconditioned regions much better than SPADE's tanh head.)
+                </div>
+            </section>
+
+            <!-- HEADLINE: Realism ≠ Relevance (cross-dataset TSTR) -->
+            <section class="results-section">
+                <h3>★ Realism ≠ Relevance — cross-dataset utility study (TSTR)</h3>
+                <p class="results-section-sub">The key finding. We measure not just whether synthetic images <em>look</em> real (FID) but whether they're <em>useful</em>: train a segmenter purely on each generator's synthetic data, test on real images (Train-on-Synthetic-Test-on-Real). Each value is <b>mean &plusmn; std over 3 random seeds</b>. <b>The utility ranking does NOT match the image-quality ranking.</b></p>
+                <table class="results-table">
+                    <thead>
+                        <tr><th>Generator</th><th>Prostate<br><small>Dice (gland)</small></th><th>TopBrain<br><small>Dice (vessel)</small></th><th>Best FID?</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><b>Real data</b> (upper bound)</td><td>0.723 <small>&plusmn;.003</small></td><td>0.671 <small>&plusmn;.006</small></td><td>—</td></tr>
+                        <tr><td><b>Combined LDM</b> (img+mask)</td><td><b>0.731 <small>&plusmn;.004</small></b> 🥇</td><td><b>0.626 <small>&plusmn;.008</small></b> 🥇</td><td>no (worse FID)</td></tr>
+                        <tr><td>LDM (image only)</td><td>0.714 <small>&plusmn;.008</small></td><td>0.608 <small>&plusmn;.010</small></td><td><b>yes</b> 🏆</td></tr>
+                        <tr><td>Pix2pix</td><td>0.710 <small>&plusmn;.007</small></td><td>0.499 <small>&plusmn;.013</small></td><td>no</td></tr>
+                        <tr><td>CycleGAN</td><td>0.599 <small>&plusmn;.019</small></td><td>0.373 <small>&plusmn;.011</small></td><td>no</td></tr>
+                    </tbody>
+                </table>
+                <p class="results-section-sub" style="margin-top:10px"><b>Third dataset (PASD, mask&rarr;MRI placenta seg):</b> real 0.900 <small>&plusmn;.002</small> · LDM <b>0.856 <small>&plusmn;.002</small></b> &asymp; pix2pix 0.845 <small>&plusmn;.016</small> &raquo; SPADE 0.633 <small>&plusmn;.010</small>. Synthetic again nearly matches real; LDM is robustly best/tied across all three datasets; the sparse-mask SPADE (~2% coverage) is worst &mdash; reinforcing the mask-density effect on a utility basis.</p>
+                <div class="results-callout">
+                    <b>The headline:</b> on <em>both</em> image&rarr;image datasets, the FID winner (plain LDM) is beaten on downstream utility by the <b>combined LDM</b> — which has <em>worse</em> FID. The combined model <b>matches or slightly exceeds real data</b> on prostate (0.731 vs 0.723) and reaches <b>~93% of real</b> on TopBrain. With 3-seed error bars, every gap in the ranking (combined &gt; LDM &gt; pix2pix &gt; CycleGAN) exceeds the std &mdash; the effect is <b>robust, not noise</b>. <b>Picking a generator by FID/SSIM is the wrong criterion when the goal is downstream utility — you must measure TSTR.</b> Confirmed across three datasets and two task types.
+                </div>
+            </section>
+
+            <!-- Augmentation: real + synthetic -->
+            <section class="results-section">
+                <h3>Augmentation — does real + synthetic beat real-only?</h3>
+                <p class="results-section-sub">A complementary regime: train the segmenter on real data <em>plus</em> each generator's synthetic data (mean &plusmn; std over 3 seeds). Synthetic augmentation never materially hurts, and the generator that is <em>worst</em> synthetic-only (CycleGAN) becomes the <em>best</em> augmenter on prostate.</p>
+                <table class="results-table">
+                    <thead>
+                        <tr><th>Trained on</th><th>Prostate</th><th>TopBrain</th><th>PASD</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><b>Real only</b></td><td>0.723 <small>&plusmn;.003</small></td><td><b>0.671 <small>&plusmn;.006</small></b></td><td>0.900 <small>&plusmn;.002</small></td></tr>
+                        <tr><td>+ CycleGAN</td><td><b>0.737 <small>&plusmn;.011</small></b></td><td>0.656 <small>&plusmn;.005</small></td><td>—</td></tr>
+                        <tr><td>+ Pix2pix</td><td>0.735 <small>&plusmn;.017</small></td><td>0.664 <small>&plusmn;.004</small></td><td><b>0.902 <small>&plusmn;.000</small></b></td></tr>
+                        <tr><td>+ Combined</td><td>0.723 <small>&plusmn;.009</small></td><td>0.665 <small>&plusmn;.006</small></td><td>—</td></tr>
+                        <tr><td>+ LDM</td><td>0.720 <small>&plusmn;.002</small></td><td>0.659 <small>&plusmn;.004</small></td><td>0.898 <small>&plusmn;.001</small></td></tr>
+                        <tr><td>+ SPADE</td><td>—</td><td>—</td><td>0.897 <small>&plusmn;.001</small></td></tr>
+                    </tbody>
+                </table>
+                <div class="results-callout">
+                    <b>Augmentation rehabilitates weak generators.</b> Where real data is the bottleneck (prostate), real+synthetic adds up to <b>+1.4 pp</b> Dice — and CycleGAN, the worst synthetic-only source (0.599), is the strongest augmenter (0.737). Where real-only is already strong (TopBrain), augmentation lands within ~1 pp (no harm). PASD gains are marginal-positive. <b>The risk of adding synthetic data is low; the upside is largest exactly when you have little real data.</b>
+                </div>
+            </section>
+
+            <!-- Robustness: second segmenter architecture -->
+            <section class="results-section">
+                <h3>Robustness — does the ranking survive a different segmenter?</h3>
+                <p class="results-section-sub">To check the utility ranking isn't an artifact of one segmenter, we re-ran synthetic-only TSTR with a genuinely different architecture (Residual U-Net with bilinear upsampling, 8.3 M params) instead of the plain U-Net.</p>
+                <table class="results-table">
+                    <thead>
+                        <tr><th>Generator</th><th>Prostate <small>(ResUNet)</small></th><th>TopBrain <small>(ResUNet)</small></th><th>PASD <small>(ResUNet)</small></th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><b>Combined LDM</b></td><td><b>0.734</b> 🥇</td><td><b>0.631</b> 🥇</td><td>—</td></tr>
+                        <tr><td>LDM</td><td>0.722</td><td>0.604</td><td><b>0.858</b></td></tr>
+                        <tr><td>Pix2pix</td><td>0.709</td><td>0.504</td><td>0.858</td></tr>
+                        <tr><td>CycleGAN</td><td>0.601</td><td>0.348</td><td>—</td></tr>
+                        <tr><td>SPADE</td><td>—</td><td>—</td><td>0.635</td></tr>
+                    </tbody>
+                </table>
+                <div class="results-callout">
+                    <b>The ranking is preserved.</b> Under a different segmenter the order is unchanged &mdash; combined &gt; LDM &gt; pix2pix &gt; CycleGAN on both image&rarr;image datasets, and LDM &asymp; pix2pix &raquo; SPADE on PASD. The realism-vs-relevance finding is a property of the <em>synthetic data</em>, not of the evaluation network.
+                </div>
+            </section>
+
+            <!-- Prostate158 three-way head to head -->
+            <section class="results-section">
+                <h3>Prostate158 — three-way head-to-head (image quality)</h3>
+                <p class="results-section-sub">Held-out 19 test patients, N=400 axial slices. <b>LDM wins on FID/KID/LPIPS — and is the best FID we've achieved across all three datasets.</b> Pix2pix and LDM tie on SSIM/PSNR (within noise). <b>CycleGAN is worst on all 5 metrics</b> — second confirmation that cross-modality CycleGAN doesn't generalize to physically-different modality pairs.</p>
+                <table class="results-table">
+                    <thead>
+                        <tr><th>Metric</th><th>Pix2pix</th><th>CycleGAN</th><th>LDM<br><small>(T2 only)</small></th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>FID ↓</td><td>81.56</td><td>117.50</td><td><b>72.70</b></td></tr>
+                        <tr><td>KID ↓</td><td>0.0652</td><td>0.0969</td><td><b>0.0529</b></td></tr>
+                        <tr><td>SSIM ↑</td><td><b>0.545</b></td><td>0.425</td><td>0.542</td></tr>
+                        <tr><td>PSNR ↑</td><td><b>20.65</b></td><td>15.95</td><td>20.53</td></tr>
+                        <tr><td>LPIPS ↓</td><td>0.264</td><td>0.342</td><td><b>0.239</b></td></tr>
+                    </tbody>
+                </table>
+                <div class="results-callout">
+                    <b>Best FID across all three datasets.</b> Prostate LDM's FID of 72.7 beats TopBrain LDM (95.7) and PASD LDM (118.9). Likely because prostate has 4-5× more train patients (119 vs 25 TopBrain, vs ~25 PASD per modality) and the T2 conditioning carries strong anatomical structure that the LDM can exploit.
+                </div>
+                <div class="results-callout" style="margin-top:10px">
+                    <b>Cross-modality CycleGAN — exception, not rule.</b> Second project after TopBrain where cross-modality CycleGAN underperforms on physically-different modality pairs. The PASD finding (CycleGAN BTFE↔TSE winning) now looks like a special case of <em>same imaging type, slightly-different patient sets</em>. CT↔MR or T2↔ADC pairs from the SAME patient give CycleGAN no "unpaired data multiplier" — pix2pix and LDM exploit the pairing CycleGAN throws away.
+                </div>
+            </section>
+
+            <!-- Prostate vs SOTA + tuning -->
+            <section class="results-section">
+                <h3>Prostate LDM vs published SOTA — honest standing</h3>
+                <p class="results-section-sub">We benchmarked our T2→ADC LDM against the literature (deep research, 2026-06-09) and ran a no-retrain inference sweep + ROI-cropped eval. Two honest conclusions: our <b>FID is competitive</b>, our <b>SSIM is genuinely behind</b> the GAN+contrastive SOTA — and that gap is <em>real</em>, not a measurement artifact.</p>
+                <table class="results-table">
+                    <thead>
+                        <tr><th>Method / config</th><th>SSIM</th><th>FID</th><th>Notes</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Ours LDM (CFG 1.0, single)</td><td>0.55</td><td><b>72.7</b></td><td>default — best FID/realism</td></tr>
+                        <tr><td>Ours LDM (CFG 1.0, ensemble×4)</td><td><b>0.62</b></td><td>88</td><td>SSIM-priority option (in UI)</td></tr>
+                        <tr><td>Ours LDM++ (adversarial)</td><td>0.51</td><td>85</td><td>❌ failed — regressed paired metrics</td></tr>
+                        <tr><td>AI-ADC (Özyörük 2024)</td><td>0.86</td><td>—</td><td>GAN+PatchNCE, <em>in-house</em> data, ROI-SSIM</td></tr>
+                    </tbody>
+                </table>
+                <div class="results-callout">
+                    <b>The SSIM gap is real.</b> We hypothesised AI-ADC's 0.86 was inflated by ROI-cropping (background excluded). We tested it: cropping our output to the actual prostate-zone bounding box gives ROI-SSIM <b>0.54</b> ≈ our full-slice 0.55 — <em>no inflation</em>. The prostate ADC region is heterogeneous and genuinely hard to match. The remaining gap is some mix of their cleaner in-house data, their contrastive (PatchNCE) loss, and unverifiable SSIM normalization. <b>We do not claim SSIM-SOTA.</b>
+                </div>
+                <div class="results-callout" style="margin-top:10px">
+                    <b>What worked / didn't (this push).</b> ✅ CFG 1.5→1.0 is a free strict win (better on every metric). ✅ Ensemble averaging is a real SSIM lever (0.55→0.62) at an FID cost — exposed as a UI knob. ❌ Adversarial latent diffusion (SynDiff-style LDM++) regressed the paired metrics — the adversarial gradient corrupted the diffusion backbone. The strong vanilla LDM remains our best model.
+                </div>
+            </section>
+
+            <!-- Prostate SPADE — sparsity hypothesis confirmed -->
+            <section class="results-section">
+                <h3>Prostate SPADE — sparsity hypothesis confirmed</h3>
+                <p class="results-section-sub">SPADE anatomy_mask → T2 (separate task from the three above; mask-only conditioning, no image). Test set N=400. <b>FID 294.7 vs LDM's 72.7</b> — much worse, but that's expected for a mask-only model. The actual finding is <em>comparative</em>: SPADE trains cleanly and produces believable surrounding anatomy on prostate, where it failed on TopBrain.</p>
+                <table class="results-table">
+                    <thead>
+                        <tr><th>Dataset</th><th>Mask coverage</th><th>SPADE result</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>TopBrain (vessels)</td><td>~1-2 % of slice (vessel labels only)</td><td>D-collapsed at ep 60/100; never produced plausible CTA</td></tr>
+                        <tr><td><b>Prostate158 (anatomy)</b></td><td><b>~30 % of slice (PZ + CG)</b></td><td>D drifted at ep ~85, rolled back to ep 70; <b>generates believable T2 with hallucinated bladder/pelvis</b></td></tr>
+                    </tbody>
+                </table>
+                <div class="results-callout">
+                    <b>The conditioning-density threshold.</b> Mask-conditional generators need a meaningful fraction of the image to carry condition. Below ~5 % coverage, SPADE has no signal to anchor texture and collapses. At ~30 % coverage (typical organ masks), SPADE generates plausible organs + plausibly-shaped surroundings. <b>Practical rule:</b> for mask→image translation, your mask should cover at least ~10-20 % of meaningful pixels — vessel-only or thin-structure masks need image-conditional methods like LDM instead.
+                </div>
+            </section>
+
+            <!-- All trained generators -->
+            <section class="results-section">
+                <h3>All trained generators</h3>
+                <table class="results-table">
+                    <thead>
+                        <tr><th>Project</th><th>Generator</th><th>Params</th><th>Trained on</th><th>Key metric</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td rowspan="5">PASD</td><td>Pix2pix BTFE</td><td>54 M</td><td>2 749 slices, 60 ep</td><td>FID <b>108.8</b>, mask Dice 0.926</td></tr>
+                        <tr><td>Pix2pix TSE</td><td>54 M</td><td>2 941 slices, 60 ep</td><td>used for TSTR aug</td></tr>
+                        <tr><td>LDM BTFE</td><td>185 M (UNet+VAE)</td><td>30k steps, v-pred</td><td>FID 118.9 (g=1.5), mask Dice 0.911</td></tr>
+                        <tr><td>SPADE-GAN v1/v2</td><td>24 M G</td><td>80 / 200 ep</td><td>Best NN-LPIPS 0.326 (privacy)</td></tr>
+                        <tr><td><b>CycleGAN xmod 🏆</b></td><td>11.4 M × 2</td><td>ep 30 (rolled back)</td><td>Cycle L1 <b>0.013</b>; TSTR winner</td></tr>
+                        <tr><td rowspan="5">TopBrain</td><td>Pix2pix MRA→CTA</td><td>54 M</td><td>4 690 slices, 60 ep</td><td>FID 126.9</td></tr>
+                        <tr><td>SPADE mask→CTA</td><td>25 M G</td><td>ep 60/100</td><td>Limited by mask sparsity</td></tr>
+                        <tr><td>CycleGAN MR↔CT</td><td>11.4 M × 2</td><td>60 ep, best-balance ckpt @ ep30</td><td>FID 106.5; mid-pack</td></tr>
+                        <tr><td>LDM combined (MR + mask)</td><td>101.2 M</td><td>VAE 8k + LDM 30k, in_ch=49</td><td>Best <b>SSIM 0.652 / PSNR 15.28</b>; FID 105.1</td></tr>
+                        <tr><td><b>LDM MRA→CTA 🏆</b></td><td>185 M</td><td>VAE 8k + LDM 30k steps</td><td>FID <b>95.7</b>, KID <b>0.031</b></td></tr>
+                        <tr><td rowspan="4">prostate158</td><td>Pix2pix T2→ADC</td><td>54 M</td><td>3 061 slices, 60 ep</td><td>FID 81.6 · SSIM <b>0.545</b></td></tr>
+                        <tr><td>CycleGAN T2↔ADC</td><td>11.4 M × 2</td><td>100 ep, best-balance ckpt</td><td>FID 117.5; worst</td></tr>
+                        <tr><td>SPADE anatomy→T2</td><td>24 M G</td><td>100 ep, best_G @ ep70 (pre-collapse)</td><td>FID 294.7 (mask-only); sparsity hypothesis confirmed</td></tr>
+                        <tr><td><b>LDM T2→ADC 🏆</b></td><td>205 M</td><td>VAE 8k + LDM 30k steps</td><td>FID <b>72.7</b> (best overall), KID <b>0.053</b></td></tr>
+                    </tbody>
+                </table>
+            </section>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

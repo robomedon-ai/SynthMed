@@ -1,0 +1,41 @@
+# --- Markdown (keep only README.md) ---
+*.md
+!README.md
+
+# --- PDFs ---
+*.pdf
+
+# --- Datasets / raw & preprocessed data ---
+Placenta accreta spectrum disorders(PASDs)/
+Placenta accreta spectrum disorders(PASDs).zip
+prostate-cancer-grade-assessment/
+prostate158_preprocessed/
+topbrain_preprocessed/
+tstr_synth_data/
+pasd_synth/
+annotations/
+
+# Heavy data file types (datasets / generated images)
+*.tiff
+*.tif
+*.gz
+*.rar
+*.zip
+
+# --- Trained models / checkpoints ---
+cv_models/
+pasd_models/
+prostate_models/
+tstr_synth_models/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+
+# --- Python caches / logs ---
+__pycache__/
+*.pyc
+*.log
+
+# --- LaTeX paper folder ---
+paper/

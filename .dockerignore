@@ -1,0 +1,23 @@
+# Keep the Docker build context small. None of these belong in the image:
+# model checkpoints download at runtime, datasets/eval/paper are not served code.
+
+# Model checkpoints (~109 GB) — restored at startup from the HF Hub.
+*_models/
+tstr_synth_models/
+
+# Datasets, synth data, eval outputs (large; not needed to boot the app).
+tstr_synth_data/
+*_preprocessed/
+pasd_synth/
+*_eval/
+prostate-cancer-grade-assessment/
+Placenta accreta spectrum disorders(PASDs)/
+annotations/
+
+# Paper, logs, caches, scratch.
+paper/
+*.log
+**/__pycache__/
+*.pyc
+.git/
+.ipynb_checkpoints/
