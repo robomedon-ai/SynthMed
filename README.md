@@ -1,14 +1,3 @@
----
-title: SynthMed
-emoji: 🧬
-colorFrom: blue
-colorTo: green
-sdk: docker
-app_port: 7860
-pinned: false
-license: mit
----
-
 # SynthMed — Medical Image Synthesis & Downstream-Utility Evaluation
 
 A unified web platform for **medical image synthesis** and **downstream-utility
