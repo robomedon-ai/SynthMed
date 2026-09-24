@@ -3066,3 +3066,38 @@ function renderCvCompareGallery(results, sharedBody) {
     }
     section.scrollIntoView({behavior: "smooth", block: "nearest"});
 }
+
+
+/* Sparkline canvases take their pixel width from clientWidth at draw time, so
+   after a rotation or a window resize they stay stretched at the old width
+   until something happens to redraw them. Redraw the ones that hold data.
+   Debounced, because resize fires continuously while a phone rotates. */
+let _sparklineRedrawTimer = null;
+window.addEventListener("resize", () => {
+    clearTimeout(_sparklineRedrawTimer);
+    _sparklineRedrawTimer = setTimeout(() => {
+        if (mriState && mriState.areas) drawAreaSparkline();
+        for (const prefix of Object.keys(_cvViewers)) {
+            if (_cvViewers[prefix] && _cvViewers[prefix].areas) drawCvSparkline(prefix);
+        }
+    }, 150);
+});
+
+
+/* On a narrow screen the subject list sits above the viewer instead of beside
+   it, so tapping a subject leaves the image a full screen below the fold.
+   Bring the workspace up after a selection. Delegated, so it covers the PASD
+   and both CV viewers without touching their individual handlers. */
+document.addEventListener("click", e => {
+    if (!window.matchMedia("(max-width: 900px)").matches) return;
+    const item = e.target.closest(".mri-subject-item");
+    if (!item) return;
+    const view = item.closest(".container");
+    // Let the click's own handler render the workspace first.
+    setTimeout(() => {
+        const ws = view && view.querySelector(".mri-workspace");
+        if (ws && ws.offsetParent !== null) {
+            ws.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    }, 350);
+});

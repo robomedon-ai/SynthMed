@@ -18,6 +18,25 @@ import torch
 app = Flask(__name__)
 
 
+@app.context_processor
+def _asset_versions():
+    """Expose static_v() to templates: /static/<f>?v=<mtime>.
+
+    Static files are served with a long cache lifetime and Cloudflare keeps its
+    own copy for hours, so an edited stylesheet can go on reaching visitors
+    well after a deploy. Stamping the URL with the file's mtime changes the URL
+    whenever the file changes, which no cache can second-guess.
+    """
+    def static_v(filename: str) -> str:
+        stamp = 0
+        try:
+            stamp = int((Path(app.static_folder) / filename).stat().st_mtime)
+        except OSError:
+            pass
+        return f"/static/{filename}?v={stamp}"
+    return {"static_v": static_v}
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -143,11 +162,25 @@ def api_mri_nifti(modality, subject, kind):
         data = mri_mod.to_nifti_bytes(modality, subject, kind)
     except ValueError as e:
         return jsonify({"error": str(e)}), 404
-    return send_file(
+    # A volume is tens of MB and never changes for a given subject, so hand the
+    # browser an ETag: flipping back to a patient already opened costs a 304
+    # instead of the whole download.
+    resp = send_file(
         io.BytesIO(data),
         mimetype="application/gzip",
         download_name=f"{subject}_{kind}.nii.gz",
+        etag=f"{modality}-{subject}-{kind}-{len(data)}",
+        conditional=True,
+        max_age=86400,
     )
+    # MUST stay private. The site is behind basic auth, but Flask's `max_age`
+    # marks the response `public`, and Cloudflare will then cache it at the edge
+    # and hand it to unauthenticated callers — patient volumes included. Private
+    # keeps the win we actually want (the browser revalidates and gets a 304)
+    # without any shared cache holding a copy.
+    resp.cache_control.public = False
+    resp.cache_control.private = True
+    return resp
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -285,11 +318,23 @@ def api_cv_view_nifti(modality, subject, kind):
         data = cv_view_mod.to_nifti_bytes(modality, subject, kind)
     except (FileNotFoundError, ValueError) as e:
         return jsonify({"error": str(e)}), 404
-    return send_file(
+    # Same as the PASD route: cacheable, so re-opening a patient is a 304.
+    resp = send_file(
         io.BytesIO(data),
         mimetype="application/gzip",
         download_name=f"{subject}_{modality}_{kind}.nii.gz",
+        etag=f"{modality}-{subject}-{kind}-{len(data)}",
+        conditional=True,
+        max_age=86400,
     )
+    # MUST stay private. The site is behind basic auth, but Flask's `max_age`
+    # marks the response `public`, and Cloudflare will then cache it at the edge
+    # and hand it to unauthenticated callers — patient volumes included. Private
+    # keeps the win we actually want (the browser revalidates and gets a 304)
+    # without any shared cache holding a copy.
+    resp.cache_control.public = False
+    resp.cache_control.private = True
+    return resp
 
 
 # ══════════════════════════════════════════════════════════════════════════════

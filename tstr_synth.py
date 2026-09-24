@@ -203,7 +203,7 @@ def prepare(args):
 
 
 def _prepare_real(dataset, cfg):
-    for split in ("train", "test"):
+    for split in ("train", "val", "test"):
         out = SYNTH_DIR / f"{dataset}_real_{split}"
         if (out / "images").exists() and list((out / "images").glob("*.jpg")):
             continue
@@ -245,12 +245,17 @@ def train(args):
     if not parts:
         raise ValueError(f"bad mode {mode}")
     train_ds = ConcatDataset(parts) if len(parts) > 1 else parts[0]
-    val_ds = FolderSeg(SYNTH_DIR / f"{args.dataset}_real_test", augment=False)
-    print(f"[train] {args.dataset}/{mode}: train={len(train_ds)} val(real test)={len(val_ds)}")
+    # VAL-BASED SELECTION: choose the checkpoint on a real validation split,
+    # then score it once on the untouched real test split.
+    val_ds = FolderSeg(SYNTH_DIR / f"{args.dataset}_real_val", augment=False)
+    test_ds = FolderSeg(SYNTH_DIR / f"{args.dataset}_real_test", augment=False)
+    print(f"[train] {args.dataset}/{mode}: train={len(train_ds)} "
+          f"val(real val)={len(val_ds)} test(real test)={len(test_ds)}")
 
     tl = DataLoader(train_ds, batch_size=args.batch, shuffle=True,
                     num_workers=args.workers, pin_memory=True, drop_last=True)
     vl = DataLoader(val_ds, batch_size=args.batch, shuffle=False, num_workers=2)
+    testl = DataLoader(test_ds, batch_size=args.batch, shuffle=False, num_workers=2)
 
     if arch == "resunet":
         model = seg.ResUNet(in_ch=1, out_ch=1, base=args.base).to(device)
@@ -261,6 +266,7 @@ def train(args):
     loss_fn = seg.DiceBCELoss()
 
     best = -1.0
+    best_ep = 0
     for ep in range(1, args.epochs + 1):
         model.train()
         for b in tl:
@@ -278,10 +284,23 @@ def train(args):
         d /= max(n, 1)
         if d > best:
             best = d
-            torch.save({"model": model.state_dict(), "dice": d, "ep": ep,
+            best_ep = ep
+            torch.save({"model": model.state_dict(), "val_dice": d, "ep": ep,
                         "args": vars(args)}, out_dir / "best.pt")
-        print(f"[ep {ep:2d}/{args.epochs}] real-test Dice={d:.4f} (best {best:.4f})", flush=True)
-    print(f"[done] {args.dataset}/{mode} best Dice={best:.4f}")
+        print(f"[ep {ep:2d}/{args.epochs}] real-val Dice={d:.4f} (best {best:.4f})", flush=True)
+
+    # single test evaluation of the val-selected checkpoint
+    ck = torch.load(out_dir / "best.pt", map_location=device, weights_only=False)
+    model.load_state_dict(ck["model"])
+    model.eval(); td = tn = 0.0
+    with torch.no_grad():
+        for b in testl:
+            x = b["image"].to(device); y = b["mask"].to(device)
+            td += float(seg.dice_score(model(x), y)) * x.size(0); tn += x.size(0)
+    td /= max(tn, 1)
+    ck["test_dice"] = td
+    torch.save(ck, out_dir / "best.pt")
+    print(f"[done] {args.dataset}/{mode} val={best:.4f} (ep {best_ep}) TEST={td:.4f}")
 
 
 # ───────── eval ─────────
@@ -292,9 +311,12 @@ def evaluate(args):
         ck = sub / "best.pt"
         if not ck.exists(): continue
         d = torch.load(ck, map_location="cpu", weights_only=False)
-        rows.append((sub.name.replace(f"{args.dataset}_", ""), d["dice"], d["ep"]))
+        if "test_dice" not in d:
+            print(f"[skip] {sub.name}: no test_dice (train it with the patched script)")
+            continue
+        rows.append((sub.name.replace(f"{args.dataset}_", ""), d["test_dice"], d["ep"]))
     rows.sort(key=lambda r: -r[1])
-    print(f"\n=== TSTR utility — {args.dataset} (real-test Dice) ===")
+    print(f"\n=== TSTR utility — {args.dataset} (real-test Dice, val-selected ckpt) ===")
     print(f"{'condition':<24} {'Dice':>7} {'ep':>4}")
     for name, dice, ep in rows:
         print(f"{name:<24} {dice:>7.4f} {ep:>4}")

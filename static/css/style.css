@@ -77,7 +77,7 @@ header .subtitle { font-size: 0.85rem; color: #8888aa; }
     border-bottom: 1px solid #eee;
     background: #fafafa;
 }
-.filters h3 { font-size: 0.85rem; text-transform: uppercase; color: #888; margin-bottom: 8px; }
+.filters h3 { font-size: 0.85rem; text-transform: uppercase; color: #5a6172; margin-bottom: 8px; }
 
 .filter-row {
     display: flex;
@@ -115,7 +115,7 @@ header .subtitle { font-size: 0.85rem; color: #8888aa; }
 .image-list-header {
     padding: 8px 16px;
     font-size: 0.8rem;
-    color: #888;
+    color: #5a6172;          /* #888 on white was 3.54:1 */
     border-bottom: 1px solid #eee;
     display: flex;
     justify-content: space-between;
@@ -164,6 +164,10 @@ header .subtitle { font-size: 0.85rem; color: #8888aa; }
 /* Info panel */
 .info-panel {
     background: #fff;
+    /* The panel is white but sits inside .mri-main, which sets `color: #ddd`
+       for the dark shell around it — inherited, that rendered the values at
+       1.36:1 on white. State the panel's own text colour. */
+    color: #1a1a2e;
     border-bottom: 1px solid #ddd;
     padding: 10px 20px;
     flex-shrink: 0;
@@ -174,7 +178,7 @@ header .subtitle { font-size: 0.85rem; color: #8888aa; }
     gap: 16px;
 }
 .info-item { display: flex; flex-direction: column; }
-.info-label { font-size: 0.7rem; text-transform: uppercase; color: #888; }
+.info-label { font-size: 0.7rem; text-transform: uppercase; color: #5a6172; }
 .info-value { font-size: 0.85rem; font-weight: 500; }
 
 .info-controls { margin-top: 8px; }
@@ -410,7 +414,7 @@ header .subtitle { font-size: 0.85rem; color: #8888aa; }
 
 .mri-hint {
     font-size: 0.75rem;
-    color: #c8a85a;
+    color: #7a5f14;          /* #c8a85a was 2.15:1 on the pale amber wash */
     margin-top: 8px;
     padding: 6px 10px;
     background: rgba(200, 168, 90, 0.08);
@@ -583,9 +587,9 @@ header .subtitle { font-size: 0.85rem; color: #8888aa; }
 }
 .mri-subject-item .meta { flex: 1; min-width: 0; }
 .mri-subject-item .meta .id { font-weight: 600; color: #1a1a2e; }
-.mri-subject-item .meta .details { font-size: 0.7rem; color: #888; }
+.mri-subject-item .meta .details { font-size: 0.7rem; color: #5a6172; }
 .mri-subject-item .badge-mask {
-    background: #4caf50;
+    background: #2e7d32;     /* #4caf50 under white text was 2.78:1 */
     color: white;
     font-size: 0.6rem;
     padding: 1px 5px;
@@ -624,13 +628,13 @@ header .subtitle { font-size: 0.85rem; color: #8888aa; }
 
 .mri-hint-inline {
     font-size: 0.7rem;
-    color: #778;
+    color: #aab6cc;          /* #778 on the dark panel was 4.06:1 */
     font-style: italic;
 }
 
 .mri-shortcuts {
     font-size: 0.7rem;
-    color: #667;
+    color: #9aa7bd;          /* #667 on the dark panel was 3.17:1 */
     margin-top: 8px;
     text-align: center;
     letter-spacing: 0.2px;
@@ -1322,7 +1326,7 @@ header .subtitle { font-size: 0.85rem; color: #8888aa; }
 .cv-legend-id {
     font-family: ui-monospace, monospace;
     font-size: 0.7rem;
-    color: #888;
+    color: #5a6172;          /* #888 was 3.39:1 */
     text-align: right;
 }
 .cv-legend-name {
@@ -1365,7 +1369,7 @@ header .subtitle { font-size: 0.85rem; color: #8888aa; }
 .mri-control-label {
     width: 130px;
     font-size: 0.78rem;
-    color: #555;
+    color: #c3cce0;          /* #555 sat on the dark control strip at 2.39:1 */
 }
 
 
@@ -1489,6 +1493,10 @@ header .subtitle { font-size: 0.85rem; color: #8888aa; }
     --rm-text: #e6eef9;
     --rm-muted: #93a5be;
     --rm-blue: #3b82f6;
+    /* White text on --rm-blue is only 3.68:1. Buttons use a darker step of the
+       same hue (5.2:1); the bright blue stays for borders, accents and the
+       gradient, where no text sits on it. */
+    --rm-blue-btn: #2563eb;
     --rm-cyan: #22d3ee;
     --rm-emerald: #34d399;
     --rm-gradient: linear-gradient(100deg, #3b82f6, #22d3ee 55%, #34d399);
@@ -1504,6 +1512,12 @@ h1, h2, h3,
 /* ── Header (dark navy) ── */
 header { background: var(--rm-bg); border-bottom: 1px solid var(--rm-border); }
 header h1.brand {
+    /* background-clip: text paints only inside the element's box, and the box
+       ends exactly where the last glyph's ink does — so the final 'd' lost its
+       right edge on some devices. A sliver of padding gives the gradient room
+       to cover the whole glyph. */
+    padding-right: 0.12em;
+    padding-bottom: 0.04em;
     background: var(--rm-gradient);
     -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent; color: transparent;
@@ -1566,13 +1580,13 @@ header .subtitle { color: var(--rm-muted); }
 }
 
 /* ── Brand-blue accents in the (still light) work areas ── */
-.btn { background: var(--rm-blue); }
+.btn { background: var(--rm-blue-btn); }
 .btn:hover { background: #2563eb; }
 .module-card:hover {
     border-color: var(--rm-blue); box-shadow: 0 4px 16px rgba(59,130,246,.18);
 }
 .module-card-tag { background: #e3edff; color: #1d4ed8; }
-.view-toggle-btn.active { background: var(--rm-blue); border-color: var(--rm-blue); }
+.view-toggle-btn.active { background: var(--rm-blue-btn); border-color: var(--rm-blue-btn); }
 
 /* Landing: full-bleed (fill viewport left/right) */
 .home-container {
@@ -1640,6 +1654,14 @@ header .subtitle { color: var(--rm-muted); }
 #view-modules .pasd-panel-synth .pasd-cell-label,
 #view-modules .pasd-cell-metrics b { color: var(--rm-text); }
 #view-modules .pasd-cell-label { color: var(--rm-text); }
+/* ...and the card they sit on, which kept its light-theme `#fafafa`. Flipping
+   the text without the surface left the metric numbers near-white on near-white
+   — the Dice/PSNR/SSIM values were invisible in the comparison strip. */
+#view-modules .pasd-gen-card,
+#view-modules .pasd-xmod-pair {
+    background: var(--rm-card);
+    border-color: var(--rm-border);
+}
 #view-modules .pasd-status { color: var(--rm-muted); }
 #view-modules .pasd-status.ok { color: #4ade80; }
 #view-modules .pasd-status.warn { color: #fbbf24; }
@@ -1687,6 +1709,9 @@ header .subtitle { color: var(--rm-muted); }
     border-left: 3px solid #f59e0b;
     color: #fcd9a0;
 }
+/* The light-theme rule paints the lead-in bold #c75a00, which on this dark
+   callout is 3.53:1. Same amber, lightened for the dark background. */
+#view-results .results-callout b { color: #fbbf24; }
 #view-results .results-details { color: var(--rm-text); }
 #view-results .results-details summary { color: #bfe9ff; cursor: pointer; }
 #view-results code { background: rgba(255,255,255,.08); color: #bfe9ff; padding: 1px 5px; border-radius: 4px; }
@@ -1798,3 +1823,228 @@ header .subtitle { color: var(--rm-muted); }
    but pin it and fix the hover accent) */
 #view-modules .module-card-featured { background: var(--rm-card); }
 #view-modules .module-card-featured:hover { border-color: var(--rm-blue); }
+
+/* ══════════════════════════════════════════
+   Responsive — tablets and phones
+   ══════════════════════════════════════════
+
+   The desktop layout is an app shell: <body> is exactly one viewport tall and
+   each pane scrolls inside itself. That model breaks on a phone — a 510 px
+   sidebar has nowhere to sit next to a canvas, and panes that scroll inside a
+   body that cannot scroll simply hide their overflow with no way to reach it.
+   Below 900 px the shell is unwound into one ordinary scrolling column: panes
+   stack in source order, each sizes to its content, and the page scrolls. */
+
+@media (max-width: 900px) {
+    /* The header is sticky, so anything scrolled to — an anchor, or the panels
+       app.js calls scrollIntoView() on — would otherwise land underneath it. */
+    html { scroll-padding-top: 140px; }   /* measured header height once the tabs wrap */
+
+    body {
+        height: auto;
+        /* dvh, not vh: on mobile browsers vh counts the area behind the URL
+           bar, so a 100vh shell is always slightly taller than the screen. */
+        min-height: 100dvh;
+        overflow-x: hidden;
+    }
+
+    /* ── Header ── */
+    header {
+        position: sticky;
+        top: 0;
+        z-index: 60;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 12px;
+        padding: 10px 14px;
+    }
+    header h1 { font-size: 1.15rem; }
+    header .subtitle {
+        order: 3;
+        flex-basis: 100%;
+        font-size: 0.75rem;
+        line-height: 1.3;
+    }
+    /* Six tabs are wider than a phone. They wrap onto a second row rather
+       than scrolling sideways, so Modules and Results are visible without
+       anyone having to discover that the strip scrolls. At tablet width they
+       still fit on one row, so the same rule covers both. */
+    .header-nav {
+        order: 4;
+        flex-basis: 100%;
+        margin-left: 0;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .nav-btn {
+        flex: 0 1 auto;
+        min-height: 40px;          /* comfortable touch target */
+        padding: 8px 12px;
+        font-size: 0.82rem;
+        white-space: nowrap;
+    }
+
+    /* ── Shell → single column ── */
+    .container {
+        flex-direction: column;
+        overflow: visible;
+        flex: 0 0 auto;
+    }
+    .sidebar, .mri-sidebar {
+        width: 100%;
+        min-width: 0;
+        overflow: visible;
+        border-right: none;
+        border-bottom: 1px solid #ddd;
+    }
+    /* Cap the subject list: without this the viewer sits below a 25-row list
+       and every patient change means scrolling back down to see the image. */
+    .image-list {
+        max-height: 42vh;
+        overflow-y: auto;
+    }
+    .main-content, .mri-main, .modules-container, .results-container {
+        overflow: visible;
+        padding: 12px;
+    }
+    /* The home view is its own scroll box sized to `100vh - 64px` — the desktop
+       header height. The mobile header is taller than that and the page itself
+       scrolls now, so let the view size to its content instead. */
+    .home-container {
+        height: auto;
+        overflow: visible;
+        padding: 16px 12px 40px;
+    }
+
+    /* ── Viewers ── */
+    .mri-workspace {
+        grid-template-columns: 1fr;
+        overflow: visible;
+        gap: 10px;
+    }
+    .mri-panel { overflow: visible; }
+    /* Stages are flex:1 children of a full-height panel on desktop; in a
+       content-height column they would collapse, so give them a shape. */
+    .mri-slice-stage {
+        aspect-ratio: 1 / 1;
+        min-height: 0;
+    }
+    .mri-3d-stage {
+        height: 72vw;
+        max-height: 420px;
+    }
+    .mri-panel-header {
+        flex-wrap: wrap;
+        row-gap: 6px;
+    }
+    /* Touch targets. Everything interactive gets at least ~40 px of height —
+       the desktop styling lands most controls at 24-28 px, which is fine for a
+       mouse and awkward for a thumb. */
+    .mri-axis-tab, .mri-icon-btn, .pasd-source-tab, .view-toggle-btn,
+    .display-mode-toggle button, .btn, .btn-sm, .btn-pasd-gen,
+    select, input[type="text"], input[type="number"] {
+        min-height: 40px;
+    }
+    .mri-axis-tab, .mri-icon-btn, .pasd-source-tab, .view-toggle-btn,
+    .display-mode-toggle button {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+    .mri-3d-controls .display-mode-toggle button { font-size: 0.78rem; }
+    input[type="range"] { height: 32px; }
+    /* Slider rows: the 130 px label column leaves nothing for the slider. */
+    .mri-control-row {
+        flex-wrap: wrap;
+        gap: 6px 10px;
+    }
+    .mri-control-row label { width: auto; }
+    .mri-control-row input[type="range"] {
+        flex: 1 1 100%;
+        height: 32px;              /* easier to grab with a thumb */
+    }
+    .mri-compare-select { max-width: none; }
+
+    /* ── Modules / generation ── */
+    .modules-cards { grid-template-columns: 1fr; }
+    /* Back button beside a title that needs three lines reads as a cramped
+       column; stack them instead. */
+    .module-detail-header {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .module-detail-header h2 { flex-basis: 100%; font-size: 1.1rem; }
+    .pasd-control-row {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .pasd-control-row select,
+    .pasd-control-row input { flex: 1 1 100%; }
+    /* Fixed 256 px preview boxes overflow a 390 px screen once padding and
+       borders are counted; keep the square, drop the fixed size. */
+    .pasd-mask-frame {
+        width: 100%;
+        max-width: 280px;
+        height: auto;
+        aspect-ratio: 1 / 1;
+    }
+    /* The paper citation is `white-space: nowrap` for the desktop panel; on a
+       phone it is simply wider than the screen. Let it wrap. */
+    .pasd-info-paper { white-space: normal; }
+    .pasd-gen-gallery { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    .pasd-gen-card    { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+    .btn-pasd-gen { width: 100%; }
+
+    /* ── Results ── */
+    /* `.results-page` sets `margin: 24px auto`, and auto side margins stop a
+       flex item from stretching — so instead of filling the screen it sized to
+       its own 1100 px max-width and hung off the edge. State the width. */
+    .results-page {
+        width: 100%;
+        max-width: 100%;
+        margin: 12px 0;
+        padding: 0 12px 28px;
+    }
+    /* Wide comparison tables scroll horizontally on their own instead of
+       stretching the page — the body must never scroll sideways. */
+    .results-table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* ── Lightbox ── */
+    .pasd-lightbox-frame {
+        max-width: 96vw;
+        max-height: 90dvh;
+        padding: 10px;
+        overflow: auto;
+    }
+    .pasd-lightbox-frame img {
+        max-width: 88vw;
+        max-height: 68dvh;
+    }
+
+    /* Nothing may push the page sideways. */
+    img, canvas, video, table { max-width: 100%; }
+}
+
+@media (max-width: 560px) {
+    header .subtitle { display: none; }   /* the title already says it */
+    header h1 { font-size: 1.05rem; }
+
+    .home-hero { padding: 22px 14px 24px; border-radius: 12px; }
+    .home-stats { gap: 18px 26px; }
+    .home-stat-n { font-size: 1.5rem; }
+
+    .info-grid { grid-template-columns: repeat(2, 1fr); }
+    .image-list { max-height: 38vh; }
+    .mri-3d-stage { height: 78vw; }
+
+    /* iOS zooms the whole page when a focused control has text under 16 px.
+       Keeping form controls at 16 px avoids that jump entirely. */
+    select, input, textarea { font-size: 16px; }
+
+    .btn, .btn-sm { min-height: 40px; }
+}

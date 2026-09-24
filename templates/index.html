@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="{{ static_v('css/style.css') }}">
     <script src="https://unpkg.com/@niivue/niivue@0.44.2/dist/niivue.umd.js"></script>
 </head>
 <body>
@@ -32,13 +32,13 @@
             <p class="home-tagline">A unified platform for <b>medical image synthesis</b> and
                <b>downstream-utility evaluation</b> across three paired datasets.</p>
             <div class="home-finding">
-                <span class="home-finding-key">Realism&nbsp;&ne;&nbsp;Relevance</span>
-                <span class="home-finding-sub">the most realistic generator (best FID) is not the most useful for training real models &mdash; measured by Train-on-Synthetic-Test-on-Real.</span>
+                <span class="home-finding-key">Does realism predict relevance?</span>
+                <span class="home-finding-sub">in all three datasets the best-FID generator is not the most useful for training real models &mdash; though none of those gaps is statistically significant, so FID does not <em>separate</em> the leading candidates. Measured by Train-on-Synthetic-Test-on-Real.</span>
             </div>
             <div class="home-stats">
                 <div class="home-stat"><span class="home-stat-n">3</span><span class="home-stat-l">datasets</span></div>
                 <div class="home-stat"><span class="home-stat-n">5</span><span class="home-stat-l">generator families</span></div>
-                <div class="home-stat"><span class="home-stat-n">~15</span><span class="home-stat-l">trained models</span></div>
+                <div class="home-stat"><span class="home-stat-n">18</span><span class="home-stat-l">trained models</span></div>
                 <div class="home-stat"><span class="home-stat-n">2</span><span class="home-stat-l">eval regimes</span></div>
             </div>
         </section>
@@ -921,19 +921,19 @@
         <div class="results-page">
             <header class="results-header">
                 <h2>Project Results &amp; Findings</h2>
-                <p class="results-sub">Two synthesis applications &mdash; placental MRI (PASD) and cerebrovascular angiography (TopBrain) &mdash; with opposite winning architectures. Live numbers below are sourced from <a href="https://github.com/" target="_blank">REPORT.md</a> and the <code>pasd_eval/</code> &amp; <code>cv_eval/</code> JSON reports.</p>
+                <p class="results-sub">Two synthesis applications &mdash; placental MRI (PASD) and cerebrovascular angiography (TopBrain) &mdash; with opposite winning architectures. Downstream-utility numbers are from the corrected protocol (checkpoint selected on a real validation split, test split scored once) over 86 retrained segmenter runs; image-quality numbers from the <code>*_eval/</code> JSON reports.</p>
             </header>
 
             <!-- Hero: two headline findings -->
             <section class="results-hero">
                 <div class="hero-card hero-pasd">
                     <div class="hero-tag">PASD &middot; placental MRI</div>
-                    <h3>Cross-modality augmentation wins everywhere</h3>
-                    <p>CycleGAN BTFE↔TSE translation produces synthetic pairs that beat <em>every</em> mask-conditional generator at <em>every</em> data size, on <em>both</em> modalities. At N=50 real slices, +xmod adds <b>+7.3 pp Dice</b>; even at full data it's the only augmentation that doesn't hurt.</p>
+                    <h3>Cross-modality augmentation leads at every data size</h3>
+                    <p>CycleGAN BTFE↔TSE translation produces synthetic pairs with the highest Dice of any augmentation source at every data size, on both modalities. Every cell is a <b>single run with no significance test</b>, so this is a consistent direction rather than a measured effect. The real-only and augmented arms also differ in annotation count, image count and training budget at once, so the gap to real-only is <b>not</b> a data-efficiency measurement.</p>
                     <div class="hero-metrics">
-                        <span><b>+7.3 pp</b> at N=50</span>
-                        <span><b>+2.3 pp</b> at full N (TSE)</span>
-                        <span>≈ <b>10×</b> data-efficiency</span>
+                        <span><b>+1.4 pp</b> over next-best source (BTFE, N=50)</span>
+                        <span><b>+3.0 pp</b> (TSE, N=50)</span>
+                        <span>single seed per cell</span>
                     </div>
                 </div>
                 <div class="hero-card hero-cv">
@@ -958,11 +958,11 @@
                     </thead>
                     <tbody>
                         <tr><td>Conditioning input</td><td>Binary placenta mask</td><td>Full MRA latent (4-ch dense)</td></tr>
-                        <tr><td>Conditioning density</td><td>~10% of slice nonzero</td><td>100% (whole image)</td></tr>
+                        <tr><td>Mask coverage (measured)</td><td>5.9% of slice</td><td>0.4% of slice</td></tr>
                         <tr><td>Data scale (per modality)</td><td>~2,750 BTFE slices</td><td>~4,690 paired slices</td></tr>
                         <tr><td>Pairing structure</td><td>BTFE+TSE per patient</td><td>CT+MRA per patient</td></tr>
                         <tr><td><b>Paired-metric winner</b></td><td>pix2pix (FID 108.8)</td><td><b>LDM (FID 95.7)</b></td></tr>
-                        <tr><td><b>Augmentation winner</b></td><td><b>CycleGAN xmod</b> (TSTR Dice 0.907)</td><td>pix2pix/combined aug &asymp; real (0.66)</td></tr>
+                        <tr><td><b>Augmentation winner</b></td><td><b>CycleGAN xmod</b> in the sweep (Dice 0.907, single seed)</td><td>all sources within seed noise of real (0.651&ndash;0.668)</td></tr>
                     </tbody>
                 </table>
                 <p class="results-takeaway"><b>Takeaway.</b> Sparse conditioning + small data favors deterministic L1 (pix2pix). Dense conditioning + paired data favors diffusion (LDM). Cross-modality pairing, when present, is a goldmine regardless of architecture.</p>
@@ -1007,10 +1007,10 @@
                     </tbody>
                 </table>
                 <div class="results-callout">
-                    <b>The vessel-mask trade-off.</b> Adding mask conditioning to LDM moves the model toward better paired pixel-match (SSIM +0.005, PSNR +0.26 dB) at the cost of worse distribution match (FID +9.4, KID +0.008). Likely because TopBrain's 41 vessel labels are very sparse (~1-2% of slice) — the extra 41 mostly-zero conditioning channels regularize texture toward something blander even as they help vessel-region placement. <b>Implication: if downstream task cares about paired pixels (e.g. registration aid), use the combined model; if it cares about realism/distribution (e.g. augmentation), use plain LDM.</b>
+                    <b>The vessel-mask trade-off.</b> Adding mask conditioning to LDM moves the model toward better paired pixel-match (SSIM +0.005, PSNR +0.26 dB) at the cost of worse distribution match (FID +9.4, KID +0.008). Likely because TopBrain's vessel labels are very sparse (measured 0.4% of slice) — the extra 41 mostly-zero conditioning channels regularize texture toward something blander even as they help vessel-region placement. <b>Implication: if downstream task cares about paired pixels (e.g. registration aid), use the combined model; if it cares about realism/distribution (e.g. augmentation), use plain LDM.</b>
                 </div>
                 <div class="results-callout" style="margin-top:10px">
-                    <b>CycleGAN doesn't reproduce the PASD pattern on TopBrain.</b> Cross-modality CycleGAN augmentation was the PASD-wide winning insight (TSTR Dice +7 pp at low data). On TopBrain it's mid-pack. Likely reasons: PASD's BTFE↔TSE are similar T-weighted MR sequences with slightly different patient sets, while TopBrain's CT↔MRA are radically different physical modalities from the <em>same</em> patient — leaving CycleGAN with less of an "unpaired data multiplier" effect. <b>The cross-modality finding is data-dependent, not universal.</b>
+                    <b>CycleGAN doesn't reproduce the PASD pattern on TopBrain.</b> Cross-modality CycleGAN augmentation led every cell of the PASD sweep (single seed, no test). On TopBrain it's mid-pack. Likely reasons: PASD's BTFE↔TSE are similar T-weighted MR sequences with slightly different patient sets, while TopBrain's CT↔MRA are radically different physical modalities from the <em>same</em> patient — leaving CycleGAN with less of an "unpaired data multiplier" effect. <b>The cross-modality finding is data-dependent, not universal.</b>
                 </div>
                 <img class="results-plot" src="/api/results/plot/cv_samples_ldm" alt="LDM samples" style="margin-top:14px">
                 <p class="results-section-sub" style="margin-top:8px"><b>Above:</b> LDM samples grid (4 cols: MRA · real CT · synthetic CT · diff×4). Diff column mostly dark = small per-pixel errors. (Pix2pix and CycleGAN grids in <code>cv_eval/</code>.)</p>
@@ -1019,53 +1019,53 @@
             <!-- SPADE caveat -->
             <section class="results-section">
                 <h3>SPADE vessel-mask → CTA — limited by data sparsity</h3>
-                <p class="results-section-sub">SPADE trained to ep 60/100 then D-collapsed. Root cause isn't the model — TopBrain's 41 vessel labels cover only ~1-2% of each slice (vessels only, no skull/brain/CSF), so SPADE has near-zero conditioning signal for ~98% of the image.</p>
+                <p class="results-section-sub">SPADE trained to ep 60/100 then D-collapsed. Root cause isn't the model — TopBrain's vessel labels cover only 0.4% of each slice (measured) (vessels only, no skull/brain/CSF), so SPADE has near-zero conditioning signal for ~98% of the image.</p>
                 <div class="results-callout">
                     <b>Lesson.</b> Mask-conditional generators fail gracefully on sparse-mask datasets; LDM with image-based conditioning is the right architecture when masks alone don't fill the image. (LDM's diffusion prior fills in unconditioned regions much better than SPADE's tanh head.)
                 </div>
             </section>
 
-            <!-- HEADLINE: Realism ≠ Relevance (cross-dataset TSTR) -->
+            <!-- HEADLINE: does realism predict relevance? (cross-dataset TSTR) -->
             <section class="results-section">
-                <h3>★ Realism ≠ Relevance — cross-dataset utility study (TSTR)</h3>
-                <p class="results-section-sub">The key finding. We measure not just whether synthetic images <em>look</em> real (FID) but whether they're <em>useful</em>: train a segmenter purely on each generator's synthetic data, test on real images (Train-on-Synthetic-Test-on-Real). Each value is <b>mean &plusmn; std over 3 random seeds</b>. <b>The utility ranking does NOT match the image-quality ranking.</b></p>
+                <h3>★ Does realism predict relevance? — cross-dataset utility study (TSTR)</h3>
+                <p class="results-section-sub">The key finding. We measure not just whether synthetic images <em>look</em> real (FID) but whether they're <em>useful</em>: train a segmenter purely on each generator's synthetic data, test on real images (Train-on-Synthetic-Test-on-Real). Each value is <b>mean &plusmn; std over 3 segmenter seeds</b>, with the checkpoint selected on a held-out real validation split and the test split scored once. <b>The FID ranking does not identify the most useful generator</b> &mdash; though none of the top-of-ranking gaps is statistically significant.</p>
                 <table class="results-table">
                     <thead>
                         <tr><th>Generator</th><th>Prostate<br><small>Dice (gland)</small></th><th>TopBrain<br><small>Dice (vessel)</small></th><th>Best FID?</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td><b>Real data</b> (upper bound)</td><td>0.723 <small>&plusmn;.003</small></td><td>0.671 <small>&plusmn;.006</small></td><td>—</td></tr>
-                        <tr><td><b>Combined LDM</b> (img+mask)</td><td><b>0.731 <small>&plusmn;.004</small></b> 🥇</td><td><b>0.626 <small>&plusmn;.008</small></b> 🥇</td><td>no (worse FID)</td></tr>
-                        <tr><td>LDM (image only)</td><td>0.714 <small>&plusmn;.008</small></td><td>0.608 <small>&plusmn;.010</small></td><td><b>yes</b> 🏆</td></tr>
-                        <tr><td>Pix2pix</td><td>0.710 <small>&plusmn;.007</small></td><td>0.499 <small>&plusmn;.013</small></td><td>no</td></tr>
-                        <tr><td>CycleGAN</td><td>0.599 <small>&plusmn;.019</small></td><td>0.373 <small>&plusmn;.011</small></td><td>no</td></tr>
+                        <tr><td><b>Real data</b> (reference)</td><td>0.699 <small>&plusmn;.007</small></td><td>0.654 <small>&plusmn;.010</small></td><td>—</td></tr>
+                        <tr><td><b>Combined LDM</b> (img+mask)</td><td><b>0.714 <small>&plusmn;.010</small></b></td><td><b>0.620 <small>&plusmn;.014</small></b></td><td>no (worse FID)</td></tr>
+                        <tr><td>LDM (image only)</td><td>0.702 <small>&plusmn;.003</small></td><td>0.596 <small>&plusmn;.022</small></td><td><b>yes</b></td></tr>
+                        <tr><td>Pix2pix</td><td>0.702 <small>&plusmn;.002</small></td><td>0.478 <small>&plusmn;.010</small></td><td>no</td></tr>
+                        <tr><td>CycleGAN</td><td>0.549 <small>&plusmn;.003</small></td><td>0.355 <small>&plusmn;.014</small></td><td>no</td></tr>
                     </tbody>
                 </table>
-                <p class="results-section-sub" style="margin-top:10px"><b>Third dataset (PASD, mask&rarr;MRI placenta seg):</b> real 0.900 <small>&plusmn;.002</small> · LDM <b>0.856 <small>&plusmn;.002</small></b> &asymp; pix2pix 0.845 <small>&plusmn;.016</small> &raquo; SPADE 0.633 <small>&plusmn;.010</small>. Synthetic again nearly matches real; LDM is robustly best/tied across all three datasets; the sparse-mask SPADE (~2% coverage) is worst &mdash; reinforcing the mask-density effect on a utility basis.</p>
+                <p class="results-section-sub" style="margin-top:10px"><b>Third dataset (PASD, mask&rarr;MRI placenta seg):</b> real 0.894 <small>&plusmn;.005</small> · LDM <b>0.849 <small>&plusmn;.009</small></b> &asymp; pix2pix 0.840 <small>&plusmn;.010</small> (p=0.13, a tie) &raquo; SPADE 0.628 <small>&plusmn;.012</small>. Synthetic reaches 95% of real-data utility but stays measurably below it (p&lt;0.001). Mask-<em>only</em> SPADE is worst at 5.9% mask coverage &mdash; and it also fails at 0.4% on TopBrain, so the deciding factor is the conditioning operation, not coverage alone.</p>
                 <div class="results-callout">
-                    <b>The headline:</b> on <em>both</em> image&rarr;image datasets, the FID winner (plain LDM) is beaten on downstream utility by the <b>combined LDM</b> — which has <em>worse</em> FID. The combined model <b>matches or slightly exceeds real data</b> on prostate (0.731 vs 0.723) and reaches <b>~93% of real</b> on TopBrain. With 3-seed error bars, every gap in the ranking (combined &gt; LDM &gt; pix2pix &gt; CycleGAN) exceeds the std &mdash; the effect is <b>robust, not noise</b>. <b>Picking a generator by FID/SSIM is the wrong criterion when the goal is downstream utility — you must measure TSTR.</b> Confirmed across three datasets and two task types.
+                    <b>The headline:</b> in all three datasets the FID winner is not the utility winner. On both image&rarr;image datasets the combined LDM leads on utility despite <em>worse</em> FID, and on prostate it is <b>not separable from real data</b> (0.714 vs 0.699, p=0.12). But <b>none of those three top-of-ranking gaps is statistically significant</b> (p=0.14, 0.89, 0.13), so what the data establish is that FID does not <em>separate</em> the leading candidates &mdash; not that it picks the wrong one. The combined-over-plain-LDM advantage is <b>positive but not statistically supported</b> (pooled +1.8 pts, p=0.099). FID is not a dependable screen either: on TopBrain it ranks CycleGAN ahead of pix2pix, which is 12.0 Dice points better downstream (p=0.014, on three test patients) &mdash; the one large disagreement these data establish. The failure is specific to FID: on TopBrain, SSIM ranks generators in exactly the utility order.
                 </div>
             </section>
 
             <!-- Augmentation: real + synthetic -->
             <section class="results-section">
                 <h3>Augmentation — does real + synthetic beat real-only?</h3>
-                <p class="results-section-sub">A complementary regime: train the segmenter on real data <em>plus</em> each generator's synthetic data (mean &plusmn; std over 3 seeds). Synthetic augmentation never materially hurts, and the generator that is <em>worst</em> synthetic-only (CycleGAN) becomes the <em>best</em> augmenter on prostate.</p>
+                <p class="results-section-sub">A complementary regime: train the segmenter on real data <em>plus</em> each generator's synthetic data (mean &plusmn; std over 3 seeds). No source materially hurts (worst &minus;0.4 pp), but <b>no ordering among the augmenters exceeds its seed spread</b>, so the leaders here are indicative only &mdash; this study ran no significance test on augmentation at all.</p>
                 <table class="results-table">
                     <thead>
                         <tr><th>Trained on</th><th>Prostate</th><th>TopBrain</th><th>PASD</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td><b>Real only</b></td><td>0.723 <small>&plusmn;.003</small></td><td><b>0.671 <small>&plusmn;.006</small></b></td><td>0.900 <small>&plusmn;.002</small></td></tr>
-                        <tr><td>+ CycleGAN</td><td><b>0.737 <small>&plusmn;.011</small></b></td><td>0.656 <small>&plusmn;.005</small></td><td>—</td></tr>
-                        <tr><td>+ Pix2pix</td><td>0.735 <small>&plusmn;.017</small></td><td>0.664 <small>&plusmn;.004</small></td><td><b>0.902 <small>&plusmn;.000</small></b></td></tr>
-                        <tr><td>+ Combined</td><td>0.723 <small>&plusmn;.009</small></td><td>0.665 <small>&plusmn;.006</small></td><td>—</td></tr>
-                        <tr><td>+ LDM</td><td>0.720 <small>&plusmn;.002</small></td><td>0.659 <small>&plusmn;.004</small></td><td>0.898 <small>&plusmn;.001</small></td></tr>
-                        <tr><td>+ SPADE</td><td>—</td><td>—</td><td>0.897 <small>&plusmn;.001</small></td></tr>
+                        <tr><td><b>Real only</b></td><td>0.699 <small>&plusmn;.007</small></td><td>0.654 <small>&plusmn;.010</small></td><td>0.894 <small>&plusmn;.005</small></td></tr>
+                        <tr><td>+ CycleGAN</td><td>0.701 <small>&plusmn;.013</small></td><td><b>0.668 <small>&plusmn;.010</small></b></td><td>—</td></tr>
+                        <tr><td>+ Pix2pix</td><td><b>0.726 <small>&plusmn;.013</small></b></td><td>0.653 <small>&plusmn;.015</small></td><td>0.890 <small>&plusmn;.001</small></td></tr>
+                        <tr><td>+ Combined</td><td>0.720 <small>&plusmn;.013</small></td><td>0.651 <small>&plusmn;.010</small></td><td>—</td></tr>
+                        <tr><td>+ LDM</td><td>0.699 <small>&plusmn;.012</small></td><td>0.658 <small>&plusmn;.012</small></td><td><b>0.896 <small>&plusmn;.002</small></b></td></tr>
+                        <tr><td>+ SPADE</td><td>—</td><td>—</td><td><b>0.896 <small>&plusmn;.002</small></b></td></tr>
                     </tbody>
                 </table>
                 <div class="results-callout">
-                    <b>Augmentation rehabilitates weak generators.</b> Where real data is the bottleneck (prostate), real+synthetic adds up to <b>+1.4 pp</b> Dice — and CycleGAN, the worst synthetic-only source (0.599), is the strongest augmenter (0.737). Where real-only is already strong (TopBrain), augmentation lands within ~1 pp (no harm). PASD gains are marginal-positive. <b>The risk of adding synthetic data is low; the upside is largest exactly when you have little real data.</b>
+                    <b>The synthetic-only ranking does not carry over.</b> On prostate the best augmenter is pix2pix (+2.6 pp), not the combined LDM that leads synthetic-only. On TopBrain CycleGAN &mdash; the <em>worst</em> synthetic-only source &mdash; has the highest mean, but it leads in only two of three seeds and by less than the seed spread. Across all eleven augmented arms the range is &minus;0.4 to +2.6 pp. <b>The risk of adding synthetic data is low; which source to add is not settled by these data.</b>
                 </div>
             </section>
 
@@ -1078,15 +1078,15 @@
                         <tr><th>Generator</th><th>Prostate <small>(ResUNet)</small></th><th>TopBrain <small>(ResUNet)</small></th><th>PASD <small>(ResUNet)</small></th></tr>
                     </thead>
                     <tbody>
-                        <tr><td><b>Combined LDM</b></td><td><b>0.734</b> 🥇</td><td><b>0.631</b> 🥇</td><td>—</td></tr>
-                        <tr><td>LDM</td><td>0.722</td><td>0.604</td><td><b>0.858</b></td></tr>
-                        <tr><td>Pix2pix</td><td>0.709</td><td>0.504</td><td>0.858</td></tr>
-                        <tr><td>CycleGAN</td><td>0.601</td><td>0.348</td><td>—</td></tr>
-                        <tr><td>SPADE</td><td>—</td><td>—</td><td>0.635</td></tr>
+                        <tr><td><b>Combined LDM</b></td><td><b>0.731</b></td><td>0.611</td><td>—</td></tr>
+                        <tr><td>LDM</td><td>0.705</td><td><b>0.615</b></td><td><b>0.852</b></td></tr>
+                        <tr><td>Pix2pix</td><td>0.697</td><td>0.452</td><td>0.835</td></tr>
+                        <tr><td>CycleGAN</td><td>0.564</td><td>0.375</td><td>—</td></tr>
+                        <tr><td>SPADE</td><td>—</td><td>—</td><td>0.638</td></tr>
                     </tbody>
                 </table>
                 <div class="results-callout">
-                    <b>The ranking is preserved.</b> Under a different segmenter the order is unchanged &mdash; combined &gt; LDM &gt; pix2pix &gt; CycleGAN on both image&rarr;image datasets, and LDM &asymp; pix2pix &raquo; SPADE on PASD. The realism-vs-relevance finding is a property of the <em>synthetic data</em>, not of the evaluation network.
+                    <b>The family ordering survives; the top pair does not.</b> The LDM family still ranks above the GANs whatever the segmenter (bar a prostate tie with pix2pix under the primary network), and LDM &raquo; pix2pix &raquo; SPADE on PASD. But at the top of TopBrain the two diffusion variants are <b>level</b> (0.615 vs 0.611) &mdash; so the combined-over-plain-LDM advantage holds in three of four dataset&times;segmenter cells, not all four. <b>These are single-seed runs</b> with no error bars.
                 </div>
             </section>
 
@@ -1107,7 +1107,7 @@
                     </tbody>
                 </table>
                 <div class="results-callout">
-                    <b>Best FID across all three datasets.</b> Prostate LDM's FID of 72.7 beats TopBrain LDM (95.7) and PASD LDM (118.9). Likely because prostate has 4-5× more train patients (119 vs 25 TopBrain, vs ~25 PASD per modality) and the T2 conditioning carries strong anatomical structure that the LDM can exploit.
+                    <b>Best FID across all three datasets.</b> Prostate LDM's FID of 72.7 beats TopBrain LDM (95.7) and PASD LDM (122.3). Likely because prostate has 4-5× more train patients (119 vs 25 TopBrain, vs ~25 PASD per modality) and the T2 conditioning carries strong anatomical structure that the LDM can exploit.
                 </div>
                 <div class="results-callout" style="margin-top:10px">
                     <b>Cross-modality CycleGAN — exception, not rule.</b> Second project after TopBrain where cross-modality CycleGAN underperforms on physically-different modality pairs. The PASD finding (CycleGAN BTFE↔TSE winning) now looks like a special case of <em>same imaging type, slightly-different patient sets</em>. CT↔MR or T2↔ADC pairs from the SAME patient give CycleGAN no "unpaired data multiplier" — pix2pix and LDM exploit the pairing CycleGAN throws away.
@@ -1165,7 +1165,7 @@
                     <tbody>
                         <tr><td rowspan="5">PASD</td><td>Pix2pix BTFE</td><td>54 M</td><td>2 749 slices, 60 ep</td><td>FID <b>108.8</b>, mask Dice 0.926</td></tr>
                         <tr><td>Pix2pix TSE</td><td>54 M</td><td>2 941 slices, 60 ep</td><td>used for TSTR aug</td></tr>
-                        <tr><td>LDM BTFE</td><td>185 M (UNet+VAE)</td><td>30k steps, v-pred</td><td>FID 118.9 (g=1.5), mask Dice 0.911</td></tr>
+                        <tr><td>LDM BTFE</td><td>185 M (UNet+VAE)</td><td>30k steps, v-pred</td><td>FID 122.3 (deployed g=3.0), mask Dice 0.911</td></tr>
                         <tr><td>SPADE-GAN v1/v2</td><td>24 M G</td><td>80 / 200 ep</td><td>Best NN-LPIPS 0.326 (privacy)</td></tr>
                         <tr><td><b>CycleGAN xmod 🏆</b></td><td>11.4 M × 2</td><td>ep 30 (rolled back)</td><td>Cycle L1 <b>0.013</b>; TSTR winner</td></tr>
                         <tr><td rowspan="5">TopBrain</td><td>Pix2pix MRA→CTA</td><td>54 M</td><td>4 690 slices, 60 ep</td><td>FID 126.9</td></tr>
@@ -1183,6 +1183,6 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js"></script>
+    <script src="{{ static_v('js/app.js') }}"></script>
 </body>
 </html>

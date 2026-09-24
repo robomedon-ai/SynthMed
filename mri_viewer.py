@@ -180,6 +180,16 @@ def render_thumbnail(modality: str, subject: str,
 
 # ── NIfTI export for NiiVue ──
 
+# Level 1 for the grayscale volume: on quantized image data it lands within 2 %
+# of level 9 while compressing ~3x faster. Masks are the opposite case — sparse
+# label runs, where level 9 is 3x SMALLER (66 KB vs 214 KB) and costs
+# milliseconds on a volume that size. Pick per kind, never one level for both.
+_NIFTI_GZIP_LEVEL = 1
+_NIFTI_MASK_GZIP_LEVEL = 9
+_NIFTI_CACHE_MAX = 4
+_NIFTI_CACHE: dict[tuple[str, str, str], bytes] = {}
+
+
 def to_nifti_bytes(modality: str, subject: str, kind: str = "image") -> bytes:
     """Serialize a volume as NIfTI-1 .nii.gz bytes (for NiiVue).
 
@@ -187,6 +197,11 @@ def to_nifti_bytes(modality: str, subject: str, kind: str = "image") -> bytes:
     kind='mask'  returns the binary placenta mask.
     """
     import nibabel as nib
+
+    key = (modality, subject, kind)
+    cached = _NIFTI_CACHE.get(key)
+    if cached is not None:
+        return cached
 
     image_vol, mask_vol = pd.get_volume(modality, subject)
     vol = image_vol if kind == "image" else mask_vol
@@ -198,6 +213,15 @@ def to_nifti_bytes(modality: str, subject: str, kind: str = "image") -> bytes:
     affine = np.diag([sx, sy, sz, 1.0])
     nii = nib.Nifti1Image(arr, affine)
     nii.header.set_xyzt_units("mm")
+    if kind == "image":
+        # Scaled int16 on the wire — see the note in cv_viewer.to_nifti_bytes.
+        # The mask is binary and stays exact.
+        nii.set_data_dtype(np.int16)
 
     import gzip
-    return gzip.compress(nii.to_bytes())
+    level = _NIFTI_GZIP_LEVEL if kind == "image" else _NIFTI_MASK_GZIP_LEVEL
+    data = gzip.compress(nii.to_bytes(), level)
+    _NIFTI_CACHE[key] = data
+    while len(_NIFTI_CACHE) > _NIFTI_CACHE_MAX:
+        _NIFTI_CACHE.pop(next(iter(_NIFTI_CACHE)))
+    return data
