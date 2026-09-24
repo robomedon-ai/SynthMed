@@ -49,3 +49,7 @@ TRANSFER_STATUS.txt
 # --- Local editing backups ---
 *.bak*
 *.PRE*
+
+# --- Exception: the paper's supplementary material is published with the code,
+# because the camera-ready footnote points readers to this repository for it.
+!supplementary.pdf
